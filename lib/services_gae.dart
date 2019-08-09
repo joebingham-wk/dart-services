@@ -15,6 +15,7 @@ import 'src/common.dart';
 import 'src/common_server.dart';
 import 'src/dartpad_support_server.dart';
 import 'src/flutter_web.dart';
+import 'src/package_manager.dart';
 
 const String _API = '/api';
 const String _healthCheck = '/_ah/health';
@@ -60,7 +61,7 @@ class GaeServer {
 
   bool discoveryEnabled;
   rpc.ApiServer apiServer;
-  FlutterWebManager flutterWebManager;
+  PackageManager packageManager;
   CommonServer commonServer;
   FileRelayServer fileRelayServer;
 
@@ -70,10 +71,10 @@ class GaeServer {
 
     discoveryEnabled = false;
     fileRelayServer = FileRelayServer();
-    flutterWebManager = FlutterWebManager(sdkPath);
+    packageManager = PackageManager(sdkPath);
     commonServer = CommonServer(
         sdkPath,
-        flutterWebManager,
+        packageManager,
         GaeServerContainer(),
         redisServerUri == null
             ? InMemoryCache()

@@ -7,7 +7,7 @@ library services.analyzer_server_test;
 import 'package:dart_services/src/analysis_server.dart';
 import 'package:dart_services/src/api_classes.dart';
 import 'package:dart_services/src/common.dart';
-import 'package:dart_services/src/flutter_web.dart';
+import 'package:dart_services/src/package_manager.dart';
 import 'package:test/test.dart';
 
 const completionCode = r'''
@@ -61,12 +61,12 @@ void main() => defineTests();
 
 void defineTests() {
   AnalysisServerWrapper analysisServer;
-  FlutterWebManager flutterWebManager;
+  PackageManager packageManager;
 
   group('analysis_server', () {
     setUp(() async {
-      flutterWebManager = FlutterWebManager(sdkPath);
-      analysisServer = AnalysisServerWrapper(sdkPath, flutterWebManager);
+      packageManager = PackageManager(sdkPath);
+      analysisServer = AnalysisServerWrapper(sdkPath, packageManager);
       await analysisServer.init();
     });
 
@@ -176,9 +176,9 @@ void defineTests() {
     test('analyze dart-2', () async {
       await analysisServer.shutdown();
 
-      flutterWebManager = FlutterWebManager(sdkPath);
+      packageManager = PackageManager(sdkPath);
 
-      analysisServer = AnalysisServerWrapper(sdkPath, flutterWebManager);
+      analysisServer = AnalysisServerWrapper(sdkPath, packageManager);
       await analysisServer.init();
 
       AnalysisResults results = await analysisServer.analyze(sampleDart2OK);

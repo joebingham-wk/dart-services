@@ -6,20 +6,20 @@ library services.compiler_test;
 
 import 'package:dart_services/src/common.dart';
 import 'package:dart_services/src/compiler.dart';
-import 'package:dart_services/src/flutter_web.dart';
+import 'package:dart_services/src/package_manager.dart';
 import 'package:test/test.dart';
 
 void main() => defineTests();
 
 void defineTests() {
   Compiler compiler;
-  FlutterWebManager flutterWebManager;
+  PackageManager packageManager;
 
   group('compiler', () {
     setUpAll(() async {
-      flutterWebManager = FlutterWebManager(sdkPath);
+      packageManager = PackageManager(sdkPath);
 
-      compiler = Compiler(sdkPath, flutterWebManager);
+      compiler = Compiler(sdkPath, packageManager);
     });
 
     tearDownAll(() async {

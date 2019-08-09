@@ -12,15 +12,15 @@ import 'package:dart_services/src/analysis_server.dart';
 import 'package:dart_services/src/bench.dart';
 import 'package:dart_services/src/common.dart';
 import 'package:dart_services/src/compiler.dart';
-import 'package:dart_services/src/flutter_web.dart';
+import 'package:dart_services/src/package_manager.dart';
 
 void main(List<String> args) async {
   final bool json = args.contains('--json');
 
   final BenchmarkHarness harness = BenchmarkHarness(asJson: json);
 
-  final FlutterWebManager flutterWebManager = FlutterWebManager(sdkPath);
-  await flutterWebManager.initFlutterWeb();
+  final PackageManager flutterWebManager = PackageManager(sdkPath);
+  await flutterWebManager.initPackageManager();
 
   var compiler = Compiler(sdkPath, flutterWebManager);
 
@@ -59,7 +59,7 @@ class AnalyzerBenchmark extends Benchmark {
   AnalysisServerWrapper analysisServer;
 
   AnalyzerBenchmark(
-      String name, this.source, FlutterWebManager flutterWebManager)
+      String name, this.source, PackageManager flutterWebManager)
       : super('analyzer.$name') {
     analysisServer = AnalysisServerWrapper(sdkPath, flutterWebManager);
   }
@@ -109,7 +109,7 @@ class AnalysisServerBenchmark extends Benchmark {
   final AnalysisServerWrapper analysisServer;
 
   AnalysisServerBenchmark(
-      String name, this.source, FlutterWebManager flutterWebManager)
+      String name, this.source, PackageManager flutterWebManager)
       : analysisServer = AnalysisServerWrapper(sdkPath, flutterWebManager),
         super('completion.$name');
 

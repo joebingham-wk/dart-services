@@ -13,7 +13,7 @@ import 'package:logging/logging.dart';
 import 'package:path/path.dart' as path;
 
 import 'common.dart';
-import 'flutter_web.dart';
+import 'package_manager.dart';
 import 'pub.dart';
 import 'sdk_manager.dart';
 
@@ -23,12 +23,12 @@ Logger _logger = Logger('compiler');
 /// compile at a time.
 class Compiler {
   final String sdkPath;
-  final FlutterWebManager flutterWebManager;
+  final PackageManager packageManager;
 
   final BazelWorkerDriver _ddcDriver;
   String _sdkVersion;
 
-  Compiler(this.sdkPath, this.flutterWebManager)
+  Compiler(this.sdkPath, this.packageManager)
       : _ddcDriver = BazelWorkerDriver(
             () => Process.start(path.join(sdkPath, 'bin', 'dartdevc'),
                 <String>['--persistent_worker']),
@@ -37,7 +37,7 @@ class Compiler {
   }
 
   bool importsOkForCompile(Set<String> imports) {
-    return !flutterWebManager.hasUnsupportedImport(imports);
+    return !packageManager.hasUnsupportedImport(imports);
   }
 
   /// The version of the SDK this copy of dart2js is based on.
@@ -58,7 +58,7 @@ class Compiler {
     if (!importsOkForCompile(imports)) {
       return CompilationResults(problems: <CompilationProblem>[
         CompilationProblem._(
-          'unsupported import: ${flutterWebManager.getUnsupportedImport(imports)}',
+          'unsupported import: ${packageManager.getUnsupportedImport(imports)}',
         ),
       ]);
     }
@@ -68,13 +68,8 @@ class Compiler {
     try {
       List<String> arguments = <String> ['run', 'build_runner',
       'build', '-r', '-o${temp.path}'];
-//      if (!returnSourceMap) arguments.add('--no-source-maps');
-//      print('The packages are ${flutterWebManager.packagesFilePath}');
-//      arguments.add('--packages=${flutterWebManager.packagesFilePath}');
-//      arguments.add('-o$kMainDart.js');
-//      arguments.add(kMainDart);
 
-      String compileTarget = path.join(flutterWebManager.projectDirectory
+      String compileTarget = path.join(packageManager.projectDirectory
           .path, 'web', kMainDart);
       File mainDart = File(compileTarget);
       await mainDart.create(recursive: true);
@@ -91,7 +86,7 @@ class Compiler {
       _logger.info('About to exec: $pubPath $arguments');
 
       ProcessResult result = Process.runSync(pubPath, arguments, workingDirectory:
-          flutterWebManager.projectDirectory.path);
+          packageManager.projectDirectory.path);
 
 //      ProcessResult result =
 //          Process.runSync(dart2JSPath, arguments, workingDirectory: temp.path);
@@ -129,7 +124,7 @@ class Compiler {
     if (!importsOkForCompile(imports)) {
       return DDCCompilationResults.failed(<CompilationProblem>[
         CompilationProblem._(
-          'unsupported import: ${flutterWebManager.getUnsupportedImport(imports)}',
+          'unsupported import: ${packageManager.getUnsupportedImport(imports)}',
         ),
       ]);
     }
@@ -141,9 +136,6 @@ class Compiler {
         '--modules=amd',
       ];
 
-      if (flutterWebManager.usesFlutterWeb(imports)) {
-        arguments.addAll(<String>['-s', flutterWebManager.summaryFilePath]);
-      }
 
       String compileTarget = path.join(temp.path, kMainDart);
       File mainDart = File(compileTarget);

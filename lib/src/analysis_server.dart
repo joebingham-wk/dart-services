@@ -14,7 +14,7 @@ import 'package:path/path.dart' as path;
 
 import 'api_classes.dart' as api;
 import 'common.dart';
-import 'flutter_web.dart';
+import 'package_manager.dart';
 import 'pub.dart';
 import 'scheduler.dart';
 
@@ -33,7 +33,7 @@ final Duration _ANALYSIS_SERVER_TIMEOUT = Duration(seconds: 35);
 
 class AnalysisServerWrapper {
   final String sdkPath;
-  final FlutterWebManager flutterWebManager;
+  final PackageManager packageManager;
 
   Future<AnalysisServer> _init;
   String mainPath;
@@ -42,14 +42,14 @@ class AnalysisServerWrapper {
   /// Instance to handle communication with the server.
   AnalysisServer analysisServer;
 
-  AnalysisServerWrapper(this.sdkPath, this.flutterWebManager) {
+  AnalysisServerWrapper(this.sdkPath, this.packageManager) {
     _logger.info('AnalysisServerWrapper ctor');
     mainPath = _getPathFromName(kMainDart);
 
     serverScheduler = TaskScheduler();
   }
 
-  String get _sourceDirPath => flutterWebManager.projectDirectory.path;
+  String get _sourceDirPath => packageManager.projectDirectory.path;
 
   Future<AnalysisServer> init() {
     if (_init == null) {

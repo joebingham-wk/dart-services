@@ -21,7 +21,7 @@ import 'analysis_server.dart';
 import 'api_classes.dart';
 import 'common.dart';
 import 'compiler.dart';
-import 'flutter_web.dart';
+import 'package_manager.dart';
 import 'pub.dart';
 import 'sdk_manager.dart';
 
@@ -261,7 +261,7 @@ class InMemoryCache implements ServerCache {
 @ApiClass(name: 'dartservices', version: 'v1')
 class CommonServer {
   final String sdkPath;
-  final FlutterWebManager flutterWebManager;
+  final PackageManager packageManager;
   final ServerContainer container;
   final ServerCache cache;
 
@@ -270,7 +270,7 @@ class CommonServer {
 
   CommonServer(
     this.sdkPath,
-    this.flutterWebManager,
+    this.packageManager,
     this.container,
     this.cache,
   ) {
@@ -279,8 +279,8 @@ class CommonServer {
   }
 
   Future<void> init() async {
-    analysisServer = AnalysisServerWrapper(sdkPath, flutterWebManager);
-    compiler = Compiler(sdkPath, flutterWebManager);
+    analysisServer = AnalysisServerWrapper(sdkPath, packageManager);
+    compiler = Compiler(sdkPath, packageManager);
 
     await analysisServer.init();
 
@@ -293,7 +293,7 @@ class CommonServer {
   }
 
   Future<void> warmup({bool useHtml = false}) async {
-    await flutterWebManager.warmup();
+    await packageManager.warmup();
     await compiler.warmup(useHtml: useHtml);
     await analysisServer.warmup(useHtml: useHtml);
   }
@@ -650,18 +650,9 @@ class CommonServer {
   Future<void> _checkPackageReferencesInitFlutterWeb(String source) async {
     Set<String> imports = getAllImportsFor(source);
 
-    if (flutterWebManager.hasUnsupportedImport(imports)) {
+    if (packageManager.hasUnsupportedImport(imports)) {
       throw BadRequestError(
-          'Unsupported input: ${flutterWebManager.getUnsupportedImport(imports)}');
-    }
-
-    if (flutterWebManager.usesFlutterWeb(imports)) {
-      try {
-        await flutterWebManager.initFlutterWeb();
-      } catch (e) {
-        log.warning('unable to init package:flutter_web');
-        return;
-      }
+          'Unsupported input: ${packageManager.getUnsupportedImport(imports)}');
     }
   }
 }

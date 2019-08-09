@@ -17,7 +17,7 @@ import 'package:dart_services/src/api_classes.dart';
 import 'package:dart_services/src/common.dart';
 import 'package:dart_services/src/common_server.dart';
 import 'package:dart_services/src/compiler.dart' as comp;
-import 'package:dart_services/src/flutter_web.dart';
+import 'package:dart_services/src/package_manager.dart';
 import 'package:rpc/rpc.dart';
 
 bool _SERVER_BASED_CALL = false;
@@ -123,24 +123,24 @@ Future setupTools(String sdkPath) async {
 
   print('SdKPath: $sdkPath');
 
-  FlutterWebManager flutterWebManager = FlutterWebManager(sdkPath);
+  PackageManager packageManager = PackageManager(sdkPath);
 
   container = MockContainer();
   cache = MockCache();
-  server = CommonServer(sdkPath, flutterWebManager, container, cache);
+  server = CommonServer(sdkPath, packageManager, container, cache);
   await server.init();
 
   apiServer = ApiServer(apiPrefix: '/api', prettyPrint: true)..addApi(server);
 
   analysisServer =
-      analysis_server.AnalysisServerWrapper(sdkPath, flutterWebManager);
+      analysis_server.AnalysisServerWrapper(sdkPath, packageManager);
   await analysisServer.init();
 
   print('Warming up analysis server');
   await analysisServer.warmup();
 
   print('Warming up compiler');
-  compiler = comp.Compiler(sdkPath, flutterWebManager);
+  compiler = comp.Compiler(sdkPath, packageManager);
   await compiler.warmup();
   print('SetupTools done');
 }
