@@ -91,6 +91,10 @@ $_samplePackageName:lib/
     'package:flutter_web',
     'package:flutter_web_ui',
     'package:flutter_web_test',
+    'package:web_skin_dart',
+    'package:web_skin',
+    'package:js',
+    'package:react',
   };
 
   bool usesFlutterWeb(Set<String> imports) {
@@ -108,6 +112,7 @@ $_samplePackageName:lib/
   String getUnsupportedImport(Set<String> imports) {
     // TODO(devoncarew): Should we support a white-listed set of package:
     // imports?
+    print('aaay');
 
     for (String import in imports) {
       // All dart: imports are ok;
@@ -117,8 +122,11 @@ $_samplePackageName:lib/
 
       // Currently we only allow flutter web imports.
       if (import.startsWith('package:')) {
+        print('ha');
+        print(import);
         if (_flutterWebImportPrefixes
             .any((String prefix) => import.startsWith(prefix))) {
+          print('suhh dude');
           continue;
         }
 
@@ -161,28 +169,50 @@ name: $_samplePackageName
     if (includeFlutterWeb) {
       content += '''
 dependencies:
-  flutter_web:
-    git:
-      url: https://github.com/flutter/flutter_web
-      path: packages/flutter_web
-  flutter_web_test:
-    git:
-      url: https://github.com/flutter/flutter_web
-      path: packages/flutter_web_test
-  flutter_web_ui:
-    git:
-      url: https://github.com/flutter/flutter_web
-      path: packages/flutter_web_ui
+  react: ^4.4.2
+  over_react: ^1.30.2
+  web_skin:
+    hosted:
+      name: web_skin
+      url: https://pub.workiva.org
+    version: ^1.53.1
+  web_skin_dart:
+    hosted:
+      name: web_skin_dart
+      url: https://pub.workiva.org
+    version: ^2.31.0
+
+dev_dependencies:
+  build_runner: ^1.0.0
+  build_web_compilers: ^2.0.0
+    
 dependency_overrides:
-  flutter_web:
-    path: ${Directory.current.path}/flutter_web/packages/flutter_web
-  flutter_web_test:
-    path: ${Directory.current.path}/flutter_web/packages/flutter_web_test
-  flutter_web_ui:
-    path: ${Directory.current.path}/flutter_web/packages/flutter_web_ui
+  react:
+    git:
+      url: git@github.com:cleandart/react-dart.git
+      ref: 5.1.0-wip
+  over_react:
+    git:
+      url: git@github.com:Workiva/over_react.git
+      ref: 3.1.0-wip
+  web_skin_dart:
+    git:
+      url: git@github.com:Workiva/web_skin_dart.git
+      ref: react-16-wip
 ''';
     }
 
     return content;
   }
 }
+
+/*
+  react:
+    path: ${Directory.current.path}/flutter_web/packages/flutter_web_ui
+  over_react:
+    path: ${Directory.current.path}/flutter_web/packages/flutter_web_ui
+  web_skin:
+    path: ${Directory.current.path}/flutter_web/packages/flutter_web_ui
+  web_skin_dart:
+    path: ${Directory.current.path}/flutter_web/packages/flutter_web_ui
+ */

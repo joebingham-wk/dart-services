@@ -66,30 +66,38 @@ class Compiler {
     Directory temp = Directory.systemTemp.createTempSync('dartpad');
 
     try {
-      List<String> arguments = <String>[
-        '--suppress-hints',
-        '--terse',
-      ];
-      if (!returnSourceMap) arguments.add('--no-source-maps');
+      List<String> arguments = <String> ['run', 'build_runner',
+      'build', '-r', '-o${temp.path}'];
+//      if (!returnSourceMap) arguments.add('--no-source-maps');
+//      print('The packages are ${flutterWebManager.packagesFilePath}');
+//      arguments.add('--packages=${flutterWebManager.packagesFilePath}');
+//      arguments.add('-o$kMainDart.js');
+//      arguments.add(kMainDart);
 
-      arguments.add('--packages=${flutterWebManager.packagesFilePath}');
-      arguments.add('-o$kMainDart.js');
-      arguments.add(kMainDart);
-
-      String compileTarget = path.join(temp.path, kMainDart);
+      String compileTarget = path.join(flutterWebManager.projectDirectory
+          .path, 'web', kMainDart);
       File mainDart = File(compileTarget);
+      mainDart.createSync(recursive: true);
       mainDart.writeAsStringSync(input);
 
-      File mainJs = File(path.join(temp.path, '$kMainDart.js'));
-      File mainSourceMap = File(path.join(temp.path, '$kMainDart.js.map'));
+      File mainJs = File(path.join(temp.path, 'web', '$kMainDart.js'));
+      File mainSourceMap = File(path.join(temp.path, 'web', '$kMainDart.js'
+          '.map'));
 
-      final String dart2JSPath = path.join(sdkPath, 'bin', 'dart2js');
-      _logger.info('About to exec: $dart2JSPath $arguments');
+//      final String dart2JSPath = path.join(sdkPath, 'bin', 'dart2js');
 
-      ProcessResult result =
-          Process.runSync(dart2JSPath, arguments, workingDirectory: temp.path);
+      final String pubPath = path.join(sdkPath, 'bin', 'pub');
+
+      _logger.info('About to exec: $pubPath $arguments');
+
+      ProcessResult result = Process.runSync(pubPath, arguments, workingDirectory:
+          flutterWebManager.projectDirectory.path);
+
+//      ProcessResult result =
+//          Process.runSync(dart2JSPath, arguments, workingDirectory: temp.path);
 
       if (result.exitCode != 0) {
+        _logger.warning(result.stderr);
         final CompilationResults results =
             CompilationResults(problems: <CompilationProblem>[
           CompilationProblem._(result.stdout as String),

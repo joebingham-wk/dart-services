@@ -21,16 +21,17 @@ Set<String> getAllImportsFor(String dartSource) {
     AnalysisErrorListener.NULL_LISTENER,
   );
   Token token = scanner.tokenize();
-
   Set<String> imports = <String>{};
 
   while (token.type != TokenType.EOF) {
+
     if (_isLibrary(token)) {
       token = _consumeSemi(token);
     } else if (_isImport(token)) {
       token = token.next;
 
       if (token.type == TokenType.STRING) {
+        print('adding the import ${stripMatchingQuotes(token.lexeme)}');
         imports.add(stripMatchingQuotes(token.lexeme));
       }
 
@@ -39,6 +40,15 @@ Set<String> getAllImportsFor(String dartSource) {
       break;
     }
   }
+
+  imports.add('package:react-dart/react.dart');
+  imports.add('package:react-dart/react_client.dart');
+
+  imports.add('package:web_skin/web_skin.dart');
+  imports.add('package:web_skin_dart/ui_components.dart');
+  imports.add('package:web_skin_dart/ui_core.dart');
+
+  print(imports.toString());
 
   return imports;
 }

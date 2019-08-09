@@ -21,7 +21,19 @@ dependencies:
   rpc: ^0.6.1
   uuid: ^2.0.0
   yaml: ^2.1.15
-  quiver: ^2.0.3
+  quiver: ">=0.25.0"
+  react: ^4.4.2
+  over_react: ^1.30.2
+  web_skin:
+    hosted:
+      name: web_skin
+      url: https://pub.workiva.org
+    version: ^1.53.1
+  web_skin_dart:
+    hosted:
+      name: web_skin_dart
+      url: https://pub.workiva.org
+    version: ^2.31.0
 
 dev_dependencies:
   discoveryapis_generator: ^0.9.11
@@ -33,6 +45,18 @@ dev_dependencies:
   synchronized: ^2.1.0
   test: ^1.6.4
   tuneup: ^0.3.6
+
+dependency_overrides:
+  react:
+    git:
+      url: git@github.com:cleandart/react-dart.git
+      ref: 5.1.0-wip
+  over_react:
+    path: ../over_react
+  web_skin_dart:
+    git:
+      url: git@github.com:Workiva/web_skin_dart.git
+      ref: react-16-wip
 
 executables:
   services: null
