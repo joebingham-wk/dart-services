@@ -112,7 +112,6 @@ $_samplePackageName:lib/
   String getUnsupportedImport(Set<String> imports) {
     // TODO(devoncarew): Should we support a white-listed set of package:
     // imports?
-    print('aaay');
 
     for (String import in imports) {
       // All dart: imports are ok;
@@ -122,11 +121,8 @@ $_samplePackageName:lib/
 
       // Currently we only allow flutter web imports.
       if (import.startsWith('package:')) {
-        print('ha');
-        print(import);
         if (_flutterWebImportPrefixes
             .any((String prefix) => import.startsWith(prefix))) {
-          print('suhh dude');
           continue;
         }
 

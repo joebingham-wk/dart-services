@@ -31,7 +31,6 @@ Set<String> getAllImportsFor(String dartSource) {
       token = token.next;
 
       if (token.type == TokenType.STRING) {
-        print('adding the import ${stripMatchingQuotes(token.lexeme)}');
         imports.add(stripMatchingQuotes(token.lexeme));
       }
 
@@ -47,8 +46,6 @@ Set<String> getAllImportsFor(String dartSource) {
   imports.add('package:web_skin/web_skin.dart');
   imports.add('package:web_skin_dart/ui_components.dart');
   imports.add('package:web_skin_dart/ui_core.dart');
-
-  print(imports.toString());
 
   return imports;
 }
