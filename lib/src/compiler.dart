@@ -63,7 +63,7 @@ class Compiler {
       ]);
     }
 
-    Directory temp = Directory.systemTemp.createTempSync('dartpad');
+    Directory temp = await Directory.systemTemp.createTemp('dartpad');
 
     try {
       List<String> arguments = <String> ['run', 'build_runner',
@@ -77,8 +77,8 @@ class Compiler {
       String compileTarget = path.join(flutterWebManager.projectDirectory
           .path, 'web', kMainDart);
       File mainDart = File(compileTarget);
-      mainDart.createSync(recursive: true);
-      mainDart.writeAsStringSync(input);
+      await mainDart.create(recursive: true);
+      await mainDart.writeAsString(input);
 
       File mainJs = File(path.join(temp.path, 'web', '$kMainDart.js'));
       File mainSourceMap = File(path.join(temp.path, 'web', '$kMainDart.js'
@@ -105,11 +105,11 @@ class Compiler {
         return results;
       } else {
         String sourceMap;
-        if (returnSourceMap && mainSourceMap.existsSync()) {
-          sourceMap = mainSourceMap.readAsStringSync();
+        if (returnSourceMap && await mainSourceMap.exists()) {
+          sourceMap = await mainSourceMap.readAsString();
         }
         final CompilationResults results = CompilationResults(
-          compiledJS: mainJs.readAsStringSync(),
+          compiledJS: await mainJs.readAsString(),
           sourceMap: sourceMap,
         );
         return results;
@@ -118,7 +118,7 @@ class Compiler {
       _logger.warning('Compiler failed: $e\n$st');
       rethrow;
     } finally {
-      temp.deleteSync(recursive: true);
+      await temp.delete(recursive: true);
       _logger.info('temp folder removed: ${temp.path}');
     }
   }
@@ -134,7 +134,7 @@ class Compiler {
       ]);
     }
 
-    Directory temp = Directory.systemTemp.createTempSync('dartpad');
+    Directory temp = await Directory.systemTemp.createTemp('dartpad');
 
     try {
       List<String> arguments = <String>[
@@ -147,7 +147,7 @@ class Compiler {
 
       String compileTarget = path.join(temp.path, kMainDart);
       File mainDart = File(compileTarget);
-      mainDart.writeAsStringSync(input);
+      await mainDart.writeAsString(input);
 
       arguments.addAll(<String>['-o', path.join(temp.path, '$kMainDart.js')]);
       arguments.add('--single-out-file');
@@ -168,7 +168,7 @@ class Compiler {
         ]);
       } else {
         final DDCCompilationResults results = DDCCompilationResults(
-          compiledJS: mainJs.readAsStringSync(),
+          compiledJS: await mainJs.readAsString(),
           modulesBaseUrl: 'https://storage.googleapis.com/'
               'compilation_artifacts/$_sdkVersion/',
         );
@@ -178,7 +178,7 @@ class Compiler {
       _logger.warning('Compiler failed: $e\n$st');
       rethrow;
     } finally {
-      temp.deleteSync(recursive: true);
+      await temp.delete(recursive: true);
       _logger.info('temp folder removed: ${temp.path}');
     }
   }
