@@ -657,7 +657,7 @@ class CommonServer {
 
     if (flutterWebManager.usesFlutterWeb(imports)) {
       try {
-        await flutterWebManager.initFlutterWeb();
+        await flutterWebManager.initFlutterWeb(source);
       } catch (e) {
         log.warning('unable to init package:flutter_web');
         return;

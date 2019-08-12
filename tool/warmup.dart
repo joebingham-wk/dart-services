@@ -9,8 +9,8 @@ import 'package:http/http.dart' as http;
 
 String uri;
 
-const BASE_URI = 'dart-services.appspot.com/api/dartservices/v1/';
-// const BASE_URI = "localhost:8080/api/dartservices/v1/";
+//const BASE_URI = 'dart-services.appspot.com/api/dartservices/v1/';
+const BASE_URI = "localhost:8082/api/dartservices/v1/";
 const count = 200;
 
 Future main(List<String> args) async {

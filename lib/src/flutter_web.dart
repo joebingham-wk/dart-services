@@ -5,6 +5,7 @@
 import 'dart:io';
 import 'dart:typed_data' show Uint8List;
 
+import 'package:dart_services/src/pub.dart';
 import 'package:http/http.dart' as http;
 import 'package:logging/logging.dart';
 import 'package:path/path.dart' as path;
@@ -59,13 +60,16 @@ $_samplePackageName:lib/
     }
   }
 
-  Future<void> initFlutterWeb() async {
-    if (_initedFlutterWeb) {
-      return;
+  Future<void> initFlutterWeb([String source]) async {
+    Map<String, String> packages;
+
+    if (source != null){
+      packages = getAllPackagesFor(source);
     }
 
     _logger.info('creating flutter web pubspec');
-    String pubspec = createPubspec(true);
+    String pubspec = createPubspec(true, packages);
+
     await File(path.join(_projectDirectory.path, 'pubspec.yaml'))
         .writeAsString(pubspec);
 
@@ -87,22 +91,8 @@ $_samplePackageName:lib/
     return path.join(_projectDirectory.path, 'flutter_web.sum');
   }
 
-  static final Set<String> _flutterWebImportPrefixes = <String>{
-    'package:flutter_web',
-    'package:flutter_web_ui',
-    'package:flutter_web_test',
-    'package:web_skin_dart',
-    'package:web_skin',
-    'package:js',
-    'package:react',
-  };
-
   bool usesFlutterWeb(Set<String> imports) {
-    return imports.any((String import) {
-      return _flutterWebImportPrefixes.any(
-        (String prefix) => import.startsWith(prefix),
-      );
-    });
+    return true;
   }
 
   bool hasUnsupportedImport(Set<String> imports) {
@@ -121,12 +111,7 @@ $_samplePackageName:lib/
 
       // Currently we only allow flutter web imports.
       if (import.startsWith('package:')) {
-        if (_flutterWebImportPrefixes
-            .any((String prefix) => import.startsWith(prefix))) {
-          continue;
-        }
-
-        return import;
+        continue;
       }
 
       // Don't allow file imports.
@@ -157,47 +142,42 @@ $_samplePackageName:lib/
 
   static const String _samplePackageName = 'dartpad_sample';
 
-  static String createPubspec(bool includeFlutterWeb) {
+  // TODO: Add support for git overrides
+  static String generateDependency(String package, [String version = 'any']) {
+    final workivaPub = ['web_skin', 'web_skin_dart'];
+    if (workivaPub.contains(package)){
+      return '''
+  $package:
+    hosted:
+      name: $package
+      url: https://pub.workiva.org
+    version: $version
+''';
+    }
+    return '  $package: $version\n';
+  }
+
+  static String createPubspec(bool includeFlutterWeb, [Map<String, String> packages]) {
     String content = '''
 name: $_samplePackageName
 ''';
 
+if (packages?.isNotEmpty != null){
+  content += '\ndependencies:\n';
+  packages.forEach((package, version){
+    content += generateDependency(package, version);
+  });
+}
+
+
+
     if (includeFlutterWeb) {
       content += '''
-dependencies:
-  react: ^4.4.2
-  over_react: ^1.30.2
-  web_skin:
-    hosted:
-      name: web_skin
-      url: https://pub.workiva.org
-    version: ^1.53.1
-  web_skin_dart:
-    hosted:
-      name: web_skin_dart
-      url: https://pub.workiva.org
-    version: ^2.31.0
-
 dev_dependencies:
   build_runner: ^1.0.0
   build_web_compilers: ^2.0.0
-    
-dependency_overrides:
-  react:
-    git:
-      url: git@github.com:cleandart/react-dart.git
-      ref: 5.1.0-wip
-  over_react:
-    git:
-      url: git@github.com:Workiva/over_react.git
-      ref: 3.1.0-wip
-  web_skin_dart:
-    git:
-      url: git@github.com:Workiva/web_skin_dart.git
-      ref: react-16-wip
 ''';
     }
-
     return content;
   }
 }
