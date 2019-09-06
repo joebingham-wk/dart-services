@@ -25,7 +25,7 @@ Logger _logger = Logger('services');
 
 void main(List<String> args) {
   ArgParser parser = ArgParser();
-  parser.addOption('port', abbr: 'p', defaultsTo: '8080');
+  parser.addOption('port', abbr: 'p', defaultsTo: '8082');
   parser.addFlag('discovery');
   parser.addFlag('relay');
   parser.addOption('server-url', defaultsTo: 'http://localhost');
