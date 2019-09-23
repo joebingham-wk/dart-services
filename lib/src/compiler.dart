@@ -90,7 +90,7 @@ class Compiler {
 
       _logger.info('About to exec: $pubPath $arguments');
 
-      ProcessResult result = Process.runSync(pubPath, arguments, workingDirectory:
+      ProcessResult result = Process.runSync('sudo', [pubPath, ...arguments, '--no-precompile'], workingDirectory:
           flutterWebManager.projectDirectory.path);
 
 //      ProcessResult result =

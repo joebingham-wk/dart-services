@@ -126,8 +126,8 @@ $_samplePackageName:lib/
     _logger.info('running pub get (${_projectDirectory.path})');
 
     ProcessResult result = await Process.run(
-      path.join(sdkPath, 'bin', 'pub'),
-      <String>['get'],
+      'sudo',
+      <String>[path.join(sdkPath, 'bin', 'pub'), 'get', '--no-precompile'],
       workingDirectory: _projectDirectory.path,
     );
 
