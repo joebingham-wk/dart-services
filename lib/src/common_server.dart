@@ -656,12 +656,7 @@ class CommonServer {
     }
 
     if (flutterWebManager.usesFlutterWeb(imports)) {
-      try {
-        await flutterWebManager.initFlutterWeb(source);
-      } catch (e) {
-        log.warning('unable to init package:flutter_web');
-        return;
-      }
+      await flutterWebManager.initFlutterWeb(source);
     }
   }
 }
