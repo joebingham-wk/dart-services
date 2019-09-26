@@ -536,8 +536,8 @@ class CommonServer {
     log.info('CACHE: MISS for compileDDC');
     Stopwatch watch = Stopwatch()..start();
 
-    return compiler.compileDDC(source, sessionId).then((DDCCompilationResults
-    results) {
+    return compiler.compileDDC(source, projectId: sessionId).then(
+            (DDCCompilationResults results) {
       if (results.hasOutput) {
         final lineCount = source.split('\n').length;
         final outputSize = (results.compiledJS.length + 512) ~/ 1024;
