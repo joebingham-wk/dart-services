@@ -112,43 +112,65 @@ class Compiler {
   async {
     Set<String> imports = getAllImportsFor(input);
 
-    Directory temp = await Directory.systemTemp.createTemp('dartpad');
     final project = projectManager.createProjectIfNecessary(projectId);
+    await project.initFlutterWeb(input);
 
     try {
-      List<String> arguments = <String>[
-        '--modules=amd',
-      ];
-
-      if (project.usesFlutterWeb(imports)) {
-        arguments.addAll(<String>['-s', project.summaryFilePath]);
-      }
+//      List<String> arguments = <String>[
+//        '--modules=amd',
+//      ];
+//
+//      if (project.usesFlutterWeb(imports)) {
+//        arguments.addAll(<String>['-s', project.summaryFilePath]);
+//      }
 
       String compileTarget = path.join(project.projectDirectory.path,
           kMainDart);
       File mainDart = File(compileTarget);
+      mainDart.parent.createSync(recursive: true);
       await mainDart.writeAsString(input);
 
-      arguments.addAll(<String>['-o', path.join(project.projectDirectory.path, '$kMainDart.js')]);
-      arguments.add('--single-out-file');
-      arguments.addAll(<String>['--module-name', 'dartpad_main']);
-      arguments.add(compileTarget);
-      arguments.addAll(<String>['--library-root', project.projectDirectory.path]);
+      final String pubPath = path.join(sdkPath, 'bin', 'pub');
 
-      File mainJs = File(path.join(project.projectDirectory.path, '$kMainDart.js'));
+      final buildAlreadyExists = await Directory('${project.projectDirectory
+          .path}/build/').exists();
+
+      if (buildAlreadyExists) {
+        await await Directory('${project.projectDirectory
+            .path}/build/').delete();
+      }
+
+      List<String> arguments = <String> ['run', 'build_runner',
+      'build', '-obuild'];
+
+      _logger.info('About to exec: $pubPath $arguments');
+
+      ProcessResult result = Process.runSync(pubPath, arguments, workingDirectory:
+      project.projectDirectory.path);
+
+//      arguments.addAll(<String>['-o', path.join(project.projectDirectory.path, '$kMainDart.js')]);
+//      arguments.add('--single-out-file');
+//      arguments.addAll(<String>['--module-name', 'dartpad_main']);
+//      arguments.add(compileTarget);
+//      arguments.addAll(<String>['--library-root', project.projectDirectory.path]);
+
+      File mainJs = File(path.join(project.projectDirectory.path, 'build',
+          '$kMainDart.js'));
 
       _logger.info('About to exec dartdevc with: $arguments');
 
-      final WorkResponse response =
-      await _ddcDriver.doWork(WorkRequest()..arguments.addAll(arguments));
+//      final WorkResponse response =
+//      await _ddcDriver.doWork(WorkRequest()..arguments.addAll(arguments));
 
-      if (response.exitCode != 0) {
+      if (result.exitCode != 0) {
+        print('aww I broke');
         return DDCCompilationResults.failed(<CompilationProblem>[
-          CompilationProblem._(response.output),
+          CompilationProblem._(result.stdout.toString()),
         ]);
       } else {
+        print('it worked!');
         final DDCCompilationResults results = DDCCompilationResults(
-          compiledJS: await mainJs.readAsString(),
+          compiledJS: '',
           modulesBaseUrl: 'https://storage.googleapis.com/'
               'compilation_artifacts/$_sdkVersion/',
         );
@@ -159,7 +181,7 @@ class Compiler {
       rethrow;
     } finally {
 //      await temp.delete(recursive: true);
-      _logger.info('Decided no to delete: ${project.projectDirectory.path}');
+      _logger.info('Decided not to delete: ${project.projectDirectory.path}');
     }
   }
 

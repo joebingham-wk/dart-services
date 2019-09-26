@@ -526,11 +526,11 @@ class CommonServer {
 
     if (result != null) {
       log.info('CACHE: Cache hit for compileDDC');
-      final resultObj = JsonDecoder().convert(result);
-      return CompileDDCResponse(
-        resultObj['compiledJS'] as String,
-        resultObj['modulesBaseUrl'] as String,
-      );
+//      final resultObj = JsonDecoder().convert(result);
+//      return CompileDDCResponse(
+//        resultObj['compiledJS'] as String,
+//        resultObj['modulesBaseUrl'] as String,
+//      );
     }
 
     log.info('CACHE: MISS for compileDDC');
@@ -538,19 +538,22 @@ class CommonServer {
 
     return compiler.compileDDC(source, projectId: sessionId).then(
             (DDCCompilationResults results) {
-      if (results.hasOutput) {
-        final lineCount = source.split('\n').length;
-        final outputSize = (results.compiledJS.length + 512) ~/ 1024;
-        final ms = watch.elapsedMilliseconds;
-        log.info('PERF: Compiled $lineCount lines of Dart into '
-            '${outputSize}kb of JavaScript in ${ms}ms using DDC.');
+              print('things are going great.');
 
-        final cachedResult = JsonEncoder().convert(<String, String>{
-          'compiledJS': results.compiledJS,
-          'modulesBaseUrl': results.modulesBaseUrl,
-        });
-        // Don't block on cache set.
-        unawaited(setCache(memCacheKey, cachedResult));
+      if (results.hasOutput) {
+        print('still going..');
+//        final lineCount = source.split('\n').length;
+//        final outputSize = (results.compiledJS.length + 512) ~/ 1024;
+//        final ms = watch.elapsedMilliseconds;
+//        log.info('PERF: Compiled $lineCount lines of Dart into '
+//            '${outputSize}kb of JavaScript in ${ms}ms using DDC.');
+//
+//        final cachedResult = JsonEncoder().convert(<String, String>{
+//          'compiledJS': results.compiledJS,
+//          'modulesBaseUrl': results.modulesBaseUrl,
+//        });
+//        // Don't block on cache set.
+//        unawaited(setCache(memCacheKey, cachedResult));
         return CompileDDCResponse(results.compiledJS, results.modulesBaseUrl);
       } else {
         final problems = results.problems;

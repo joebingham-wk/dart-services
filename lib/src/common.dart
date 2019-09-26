@@ -8,7 +8,7 @@ import 'dart:io';
 
 import 'sdk_manager.dart';
 
-const kMainDart = 'main.dart';
+const kMainDart = 'web/main.dart';
 
 const sampleCode = '''
 void main() {
