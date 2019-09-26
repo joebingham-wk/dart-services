@@ -21,7 +21,7 @@ class ProjectManager {
   final Map<String, Project> _projectsByName = {};
 
   ProjectManager(this.sdkPath, {String projectsDirectory})
-    : _projectsDirectory = Directory(projectsDirectory).absolute ?? Directory.systemTemp.createTempSync('dartpad');
+    : _projectsDirectory = projectsDirectory != null ? Directory(projectsDirectory).absolute : Directory.systemTemp.createTempSync('dartpad');
 
   Project _createProject(String projectId) {
     final projectDirectory = Directory(path.join(_projectsDirectory.path, projectId))
