@@ -1,6 +1,6 @@
 {
  "kind": "discovery#restDescription",
- "etag": "51bc4ba1c149f96ef9600a8239d9047037ec8167",
+ "etag": "8d4d4001bad5c5000efabe673ed5320cd302b018",
  "discoveryVersion": "v1",
  "id": "dartservices:v1",
  "name": "dartservices",
@@ -17,6 +17,10 @@
    "id": "SourceRequest",
    "type": "object",
    "properties": {
+    "sessionId": {
+     "type": "string",
+     "required": true
+    },
     "source": {
      "type": "string",
      "description": "The Dart source.",
@@ -88,7 +92,8 @@
      "required": true
     },
     "sessionId": {
-     "type": "string"
+     "type": "string",
+     "required": true
     },
     "returnSourceMap": {
      "type": "boolean",

@@ -785,6 +785,7 @@ class SourceEdit {
 class SourceRequest {
   /// An optional offset into the source code.
   core.int offset;
+  core.String sessionId;
 
   /// The Dart source.
   core.String source;
@@ -794,6 +795,9 @@ class SourceRequest {
   SourceRequest.fromJson(core.Map _json) {
     if (_json.containsKey("offset")) {
       offset = _json["offset"];
+    }
+    if (_json.containsKey("sessionId")) {
+      sessionId = _json["sessionId"];
     }
     if (_json.containsKey("source")) {
       source = _json["source"];
@@ -805,6 +809,9 @@ class SourceRequest {
         new core.Map<core.String, core.Object>();
     if (offset != null) {
       _json["offset"] = offset;
+    }
+    if (sessionId != null) {
+      _json["sessionId"] = sessionId;
     }
     if (source != null) {
       _json["source"] = source;
