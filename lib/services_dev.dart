@@ -82,7 +82,7 @@ class EndpointsServer {
 
   static Future<String> generateDiscovery(
       String sdkPath, String serverUrl) async {
-    FlutterWebManager flutterWebManager = FlutterWebManager(sdkPath);
+    ProjectManager flutterWebManager = ProjectManager(sdkPath);
     CommonServer commonServer =
         CommonServer(sdkPath, flutterWebManager, _ServerContainer(), _Cache());
     await commonServer.init();
@@ -122,14 +122,14 @@ class EndpointsServer {
   ApiServer apiServer;
   bool discoveryEnabled;
   CommonServer commonServer;
-  FlutterWebManager flutterWebManager;
+  ProjectManager flutterWebManager;
   StaticFileServer staticFileServer = StaticFileServer();
   HttpRequest test;
 
   EndpointsServer._(String sdkPath, this.port) {
     discoveryEnabled = false;
 
-    flutterWebManager = FlutterWebManager(sdkPath);
+    flutterWebManager = ProjectManager(sdkPath);
     commonServer =
         CommonServer(sdkPath, flutterWebManager, _ServerContainer(), _Cache());
     commonServer.init();

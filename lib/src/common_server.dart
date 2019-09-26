@@ -12,6 +12,7 @@ import 'dart:math';
 import 'package:crypto/crypto.dart';
 import 'package:dartis/dartis.dart' as redis;
 import 'package:logging/logging.dart';
+import 'package:meta/meta.dart';
 import 'package:pedantic/pedantic.dart';
 import 'package:quiver/cache.dart';
 import 'package:rpc/rpc.dart';
@@ -261,12 +262,12 @@ class InMemoryCache implements ServerCache {
 @ApiClass(name: 'dartservices', version: 'v1')
 class CommonServer {
   final String sdkPath;
-  final FlutterWebManager flutterWebManager;
+  final ProjectManager flutterWebManager;
   final ServerContainer container;
   final ServerCache cache;
 
   Compiler compiler;
-  AnalysisServerWrapper analysisServer;
+  AnalysisServerWrapperManager analysisServerManager;
 
   CommonServer(
     this.sdkPath,
@@ -279,23 +280,23 @@ class CommonServer {
   }
 
   Future<void> init() async {
-    analysisServer = AnalysisServerWrapper(sdkPath, flutterWebManager);
+    analysisServerManager = AnalysisServerWrapperManager(sdkPath, flutterWebManager);
     compiler = Compiler(sdkPath, flutterWebManager);
 
-    await analysisServer.init();
+//    await analysisServer.init();
 
-    unawaited(analysisServer.onExit.then((int code) {
-      log.severe('analysisServer exited, code: $code');
-      if (code != 0) {
-        exit(code);
-      }
-    }));
+//    unawaited(analysisServer.onExit.then((int code) {
+//      log.severe('analysisServer exited, code: $code');
+//      if (code != 0) {
+//        exit(code);
+//      }
+//    }));
   }
 
   Future<void> warmup({bool useHtml = false}) async {
-    await flutterWebManager.warmup();
-    await compiler.warmup(useHtml: useHtml);
-    await analysisServer.warmup(useHtml: useHtml);
+//    await flutterWebManager.warmup();
+//    await compiler.warmup(useHtml: useHtml);
+//    await analysisServer.warmup(useHtml: useHtml);
   }
 
   Future<void> restart() async {
@@ -311,11 +312,19 @@ class CommonServer {
 
   Future<dynamic> shutdown() {
     return Future.wait(<Future<dynamic>>[
-      analysisServer.shutdown(),
+      analysisServerManager.dispose(),
       compiler.dispose(),
       Future<dynamic>.sync(cache.shutdown)
     ]);
   }
+  
+//  static const wIdeSessionCookieName = 'w_ide';
+//
+//  String getProjectIdFromCookie() {
+//    final sessionCookie = context.requestCookies.firstWhere((cookie) => cookie.name == wIdeSessionCookieName, orElse: () => null);
+//    if (sessionCookie == null) throw BadRequestError('Must have session cookie');
+//    return sessionCookie.value;
+//  }
 
   @ApiMethod(
       method: 'POST',
@@ -324,7 +333,7 @@ class CommonServer {
           'Analyze the given Dart source code and return any resulting '
           'analysis errors or warnings.')
   Future<AnalysisResults> analyze(SourceRequest request) {
-    return _analyze(request.source);
+    return _analyze(request.source, projectId: request.sessionId);
   }
 
   @ApiMethod(
@@ -352,11 +361,13 @@ class CommonServer {
       description:
           'Get the valid code completion results for the given offset.')
   Future<CompleteResponse> complete(SourceRequest request) {
+    
+    
     if (request.offset == null) {
       throw BadRequestError('Missing parameter: \'offset\'');
     }
 
-    return _complete(request.source, request.offset);
+    return _complete(source: request.source, offset: request.offset, projectId: request.sessionId);
   }
 
   @ApiMethod(
@@ -368,7 +379,7 @@ class CommonServer {
       throw BadRequestError('Missing parameter: \'offset\'');
     }
 
-    return _fixes(request.source, request.offset);
+    return _fixes(source: request.source, offset: request.offset, projectId: request.sessionId);
   }
 
   @ApiMethod(
@@ -380,7 +391,7 @@ class CommonServer {
       throw BadRequestError('Missing parameter: \'offset\'');
     }
 
-    return _assists(request.source, request.offset);
+    return _assists(source: request.source, offset: request.offset, projectId: request.sessionId);
   }
 
   @ApiMethod(
@@ -390,7 +401,7 @@ class CommonServer {
           'If an offset is supplied in the request, the new position for that '
           'offset in the formatted code will be returned.')
   Future<FormatResponse> format(SourceRequest request) {
-    return _format(request.source, offset: request.offset);
+    return _format(request.source, offset: request.offset, projectId: request.sessionId);
   }
 
   @ApiMethod(
@@ -399,7 +410,7 @@ class CommonServer {
       description: 'Return the relevant dartdoc information for the element at '
           'the given offset.')
   Future<DocumentResponse> document(SourceRequest request) {
-    return _document(request.source, request.offset);
+    return _document(source: request.source, offset: request.offset, projectId: request.sessionId);
   }
 
   @ApiMethod(
@@ -409,15 +420,21 @@ class CommonServer {
   Future<VersionResponse> version() =>
       Future<VersionResponse>.value(_version());
 
-  Future<AnalysisResults> _analyze(String source) async {
+  Future<AnalysisServerWrapper> _getAnalysisServerWrapper(String projectId) async {
+    final wrapper = analysisServerManager.createWrapperIfNecessary(projectId);
+    await wrapper.init();
+    return wrapper;
+  }
+
+  Future<AnalysisResults> _analyze(String source, {@required String projectId}) async {
     if (source == null) {
       throw BadRequestError('Missing parameter: \'source\'');
     }
 
-    await _checkPackageReferencesInitFlutterWeb(source);
-
     try {
       final Stopwatch watch = Stopwatch()..start();
+
+      final analysisServer = await _getAnalysisServerWrapper(projectId);
 
       AnalysisResults results = await analysisServer.analyze(source);
       int lineCount = source.split('\n').length;
@@ -438,8 +455,6 @@ class CommonServer {
     if (source == null) {
       throw BadRequestError('Missing parameter: \'source\'');
     }
-
-    await _checkPackageReferencesInitFlutterWeb(source);
 
     final sourceHash = _hashSource(source);
     final memCacheKey = '%%COMPILE:v0'
@@ -497,8 +512,6 @@ class CommonServer {
 
     print('compiling');
 
-    await _checkPackageReferencesInitFlutterWeb(source);
-
     final sourceHash = _hashSource(source);
     final memCacheKey = '%%COMPILE_DDC:v0:source:$sourceHash';
 
@@ -548,7 +561,7 @@ class CommonServer {
     });
   }
 
-  Future<DocumentResponse> _document(String source, int offset) async {
+  Future<DocumentResponse> _document({@required String source, @required int offset, @required String projectId}) async {
     if (source == null) {
       throw BadRequestError('Missing parameter: \'source\'');
     }
@@ -556,10 +569,10 @@ class CommonServer {
       throw BadRequestError('Missing parameter: \'offset\'');
     }
 
-    await _checkPackageReferencesInitFlutterWeb(source);
-
     Stopwatch watch = Stopwatch()..start();
     try {
+      final analysisServer = await _getAnalysisServerWrapper(projectId);
+
       Map<String, String> docInfo =
           await analysisServer.dartdoc(source, offset);
       docInfo ??= <String, String>{};
@@ -579,7 +592,7 @@ class CommonServer {
       servicesVersion: servicesVersion,
       appEngineVersion: container.version);
 
-  Future<CompleteResponse> _complete(String source, int offset) async {
+  Future<CompleteResponse> _complete({@required String source, @required int offset, @required String projectId}) async {
     if (source == null) {
       throw BadRequestError('Missing parameter: \'source\'');
     }
@@ -587,10 +600,9 @@ class CommonServer {
       throw BadRequestError('Missing parameter: \'offset\'');
     }
 
-    await _checkPackageReferencesInitFlutterWeb(source);
-
     Stopwatch watch = Stopwatch()..start();
     try {
+      final analysisServer = await _getAnalysisServerWrapper(projectId);
       CompleteResponse response = await analysisServer.complete(source, offset);
       log.info('PERF: Computed completions in ${watch.elapsedMilliseconds}ms.');
       return response;
@@ -601,7 +613,7 @@ class CommonServer {
     }
   }
 
-  Future<FixesResponse> _fixes(String source, int offset) async {
+  Future<FixesResponse> _fixes({@required String source, @required int offset, @required String projectId}) async {
     if (source == null) {
       throw BadRequestError('Missing parameter: \'source\'');
     }
@@ -609,15 +621,14 @@ class CommonServer {
       throw BadRequestError('Missing parameter: \'offset\'');
     }
 
-    await _checkPackageReferencesInitFlutterWeb(source);
-
     Stopwatch watch = Stopwatch()..start();
+    final analysisServer = await _getAnalysisServerWrapper(projectId);
     FixesResponse response = await analysisServer.getFixes(source, offset);
     log.info('PERF: Computed fixes in ${watch.elapsedMilliseconds}ms.');
     return response;
   }
 
-  Future<AssistsResponse> _assists(String source, int offset) async {
+  Future<AssistsResponse> _assists({@required String source, @required int offset, @required String projectId}) async {
     if (source == null) {
       throw BadRequestError('Missing parameter: \'source\'');
     }
@@ -625,15 +636,14 @@ class CommonServer {
       throw BadRequestError('Missing parameter: \'offset\'');
     }
 
-    await _checkPackageReferencesInitFlutterWeb(source);
-
     Stopwatch watch = Stopwatch()..start();
+    final analysisServer = await _getAnalysisServerWrapper(projectId);
     var response = await analysisServer.getAssists(source, offset);
     log.info('PERF: Computed assists in ${watch.elapsedMilliseconds}ms.');
     return response;
   }
 
-  Future<FormatResponse> _format(String source, {int offset}) async {
+  Future<FormatResponse> _format(String source, {int offset, @required String projectId}) async {
     if (source == null) {
       throw BadRequestError('Missing parameter: \'source\'');
     }
@@ -641,6 +651,7 @@ class CommonServer {
 
     Stopwatch watch = Stopwatch()..start();
 
+    final analysisServer = await _getAnalysisServerWrapper(projectId);
     FormatResponse response = await analysisServer.format(source, offset);
     log.info('PERF: Computed format in ${watch.elapsedMilliseconds}ms.');
     return response;
@@ -650,28 +661,6 @@ class CommonServer {
 
   Future<void> setCache(String query, String result) =>
       cache.set(query, result, expiration: _standardExpiration);
-
-  /// Check that the set of packages referenced is valid.
-  ///
-  /// If there are uses of package:flutter_web, ensure that support there is
-  /// initialized.
-  Future<void> _checkPackageReferencesInitFlutterWeb(String source) async {
-    Set<String> imports = getAllImportsFor(source);
-
-    if (flutterWebManager.hasUnsupportedImport(imports)) {
-      throw BadRequestError(
-          'Unsupported input: ${flutterWebManager.getUnsupportedImport(imports)}');
-    }
-
-    if (flutterWebManager.usesFlutterWeb(imports)) {
-      try {
-        await flutterWebManager.initFlutterWeb(source);
-      } catch (e) {
-        log.warning('unable to init package:flutter_web');
-        return;
-      }
-    }
-  }
 
   Future<bool> _hasSessionFolder(String sessionId) async {
     final sessionDir =

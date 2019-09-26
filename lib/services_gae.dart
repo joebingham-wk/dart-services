@@ -61,7 +61,7 @@ class GaeServer {
 
   bool discoveryEnabled;
   rpc.ApiServer apiServer;
-  FlutterWebManager flutterWebManager;
+  ProjectManager flutterWebManager;
   CommonServer commonServer;
   FileRelayServer fileRelayServer;
   StaticFileServer staticFileServer;
@@ -72,7 +72,7 @@ class GaeServer {
 
     discoveryEnabled = false;
     fileRelayServer = FileRelayServer();
-    flutterWebManager = FlutterWebManager(sdkPath);
+    flutterWebManager = ProjectManager(sdkPath);
     staticFileServer = StaticFileServer();
 
     commonServer = CommonServer(

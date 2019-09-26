@@ -10,11 +10,11 @@ import 'dart:io';
 
 import 'package:bazel_worker/driver.dart';
 import 'package:logging/logging.dart';
+import 'package:meta/meta.dart';
 import 'package:path/path.dart' as path;
 
 import 'common.dart';
 import 'flutter_web.dart';
-import 'pub.dart';
 import 'sdk_manager.dart';
 
 Logger _logger = Logger('compiler');
@@ -23,12 +23,12 @@ Logger _logger = Logger('compiler');
 /// compile at a time.
 class Compiler {
   final String sdkPath;
-  final FlutterWebManager flutterWebManager;
+  final ProjectManager projectManager;
 
   final BazelWorkerDriver _ddcDriver;
   String _sdkVersion;
 
-  Compiler(this.sdkPath, this.flutterWebManager)
+  Compiler(this.sdkPath, this.projectManager)
       : _ddcDriver = BazelWorkerDriver(
             () => Process.start(path.join(sdkPath, 'bin', 'dartdevc'),
                 <String>['--persistent_worker']),
@@ -36,40 +36,30 @@ class Compiler {
     _sdkVersion = SdkManager.sdk.version;
   }
 
-  bool importsOkForCompile(Set<String> imports) {
-    return !flutterWebManager.hasUnsupportedImport(imports);
-  }
-
   /// The version of the SDK this copy of dart2js is based on.
   String get version {
     return File(path.join(sdkPath, 'version')).readAsStringSync().trim();
   }
 
-  Future<CompilationResults> warmup({bool useHtml = false}) {
-    return compile(useHtml ? sampleCodeWeb : sampleCode);
+  Future<CompilationResults> warmup({bool useHtml = false, @required String projectId}) {
+    return compile(useHtml ? sampleCodeWeb : sampleCode, projectId: projectId);
   }
 
   /// Compile the given string and return the resulting [CompilationResults].
   Future<CompilationResults> compile(
     String input, {
     bool returnSourceMap = false,
+    @required String projectId,
   }) async {
-    Set<String> imports = getAllImportsFor(input);
-    if (!importsOkForCompile(imports)) {
-      return CompilationResults(problems: <CompilationProblem>[
-        CompilationProblem._(
-          'unsupported import: ${flutterWebManager.getUnsupportedImport(imports)}',
-        ),
-      ]);
-    }
-
     Directory temp = await Directory.systemTemp.createTemp('dartpad');
 
     try {
       List<String> arguments = <String> ['run', 'build_runner',
       'build', '-r', '-o${temp.path}'];
 
-      String compileTarget = path.join(flutterWebManager.projectDirectory
+      final project = projectManager.createProjectIfNecessary(projectId);
+
+      String compileTarget = path.join(project.projectDirectory
           .path, 'web', kMainDart);
       File mainDart = File(compileTarget);
       await mainDart.create(recursive: true);
@@ -84,7 +74,7 @@ class Compiler {
       _logger.info('About to exec: $pubPath $arguments');
 
       ProcessResult result = Process.runSync(pubPath, arguments, workingDirectory:
-          flutterWebManager.projectDirectory.path);
+          project.projectDirectory.path);
 
       if (result.exitCode != 0) {
         _logger.warning(result.stderr);
@@ -116,15 +106,6 @@ class Compiler {
   /// Compile the given string and return the resulting [DDCCompilationResults].
   Future<DDCCompilationResults> compileDDC(String input, String sessionId)
   async {
-    Set<String> imports = getAllImportsFor(input);
-    if (!importsOkForCompile(imports)) {
-      return DDCCompilationResults.failed(<CompilationProblem>[
-        CompilationProblem._(
-          'unsupported import: ${flutterWebManager.getUnsupportedImport(imports)}',
-        ),
-      ]);
-    }
-
     Directory dir =
         Directory('${Directory.current.path}/dartpadSessionCache/$sessionId');
     await dir.create(recursive: true);
@@ -140,9 +121,9 @@ class Compiler {
       File mainDart = File(compileTarget);
       await mainDart.writeAsString(input);
 
-      final pubspecInput = _generatePubspec(imports);
-      File pubspec = File(path.join(dir.path, 'pubspec.yaml'));
-      await pubspec.writeAsString(pubspecInput);
+//      final pubspecInput = _generatePubspec(imports);
+//      File pubspec = File(path.join(dir.path, 'pubspec.yaml'));
+//      await pubspec.writeAsString(pubspecInput);
 
 
       arguments.addAll(<String>['-o', path.join(dir.path, '$kMainDart.js')]);
