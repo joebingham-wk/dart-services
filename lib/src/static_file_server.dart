@@ -1,6 +1,7 @@
 
 import 'dart:io';
 
+import 'package:mime/mime.dart';
 import 'package:shelf/shelf.dart';
 import 'package:path/path.dart' as p;
 
@@ -30,6 +31,6 @@ class StaticFileServer {
       return Response.notFound('"$path" not found within output files');
     }
 
-    return Response.ok(await outputFile.readAsString());
+    return Response.ok(await outputFile.readAsString(), headers: {'content-type': lookupMimeType(path)});
   }
 }

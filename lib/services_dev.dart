@@ -129,7 +129,7 @@ class EndpointsServer {
   EndpointsServer._(String sdkPath, this.port) {
     discoveryEnabled = false;
 
-    flutterWebManager = ProjectManager(sdkPath);
+    flutterWebManager = ProjectManager(sdkPath, projectsDirectory: '.dart_tool/dart_services_projects');
     staticFileServer = StaticFileServer(flutterWebManager);
     commonServer =
         CommonServer(sdkPath, flutterWebManager, _ServerContainer(), _Cache());

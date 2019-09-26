@@ -128,8 +128,8 @@ class Compiler {
           .path}/build/').exists();
 
       if (buildAlreadyExists) {
-        await await Directory('${project.projectDirectory
-            .path}/build/').delete();
+        await Directory('${project.projectDirectory
+            .path}/build/').delete(recursive: true);
       }
 
       List<String> arguments = <String> ['run', 'build_runner',
@@ -137,7 +137,7 @@ class Compiler {
 
       _logger.info('About to exec: $pubPath $arguments');
 
-      ProcessResult result = Process.runSync(pubPath, arguments, workingDirectory:
+      ProcessResult result = await Process.run(pubPath, arguments, workingDirectory:
       project.projectDirectory.path);
 
       _logger.info('About to exec dartdevc with: $arguments');
