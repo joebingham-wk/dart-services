@@ -343,6 +343,7 @@ class CommonServer {
           'resulting JavaScript; this uses the dart2js compiler.')
   Future<CompileResponse> compile(CompileRequest request) {
     return _compileDart2js(request.source,
+        projectId: request.sessionId,
         returnSourceMap: request.returnSourceMap ?? false);
   }
 
@@ -420,8 +421,10 @@ class CommonServer {
   Future<VersionResponse> version() =>
       Future<VersionResponse>.value(_version());
 
-  Future<AnalysisServerWrapper> _getAnalysisServerWrapper(String projectId) async {
+  Future<AnalysisServerWrapper> _getAnalysisServerWrapper(String projectId, {String source}) async {
     final wrapper = analysisServerManager.createWrapperIfNecessary(projectId);
+    // TODO see if we can only call this when we need to instead of every time
+    await wrapper.flutterWebManager.initFlutterWeb(source);
     await wrapper.init();
     return wrapper;
   }
@@ -434,7 +437,7 @@ class CommonServer {
     try {
       final Stopwatch watch = Stopwatch()..start();
 
-      final analysisServer = await _getAnalysisServerWrapper(projectId);
+      final analysisServer = await _getAnalysisServerWrapper(projectId, source: source);
 
       AnalysisResults results = await analysisServer.analyze(source);
       int lineCount = source.split('\n').length;
@@ -451,6 +454,7 @@ class CommonServer {
   Future<CompileResponse> _compileDart2js(
     String source, {
     bool returnSourceMap = false,
+    @required String projectId
   }) async {
     if (source == null) {
       throw BadRequestError('Missing parameter: \'source\'');
@@ -474,7 +478,7 @@ class CommonServer {
     final watch = Stopwatch()..start();
 
     return compiler
-        .compile(source, returnSourceMap: returnSourceMap)
+        .compile(source, projectId: projectId, returnSourceMap: returnSourceMap)
         .then((CompilationResults results) {
       if (results.hasOutput) {
         final lineCount = source.split('\n').length;
@@ -571,7 +575,7 @@ class CommonServer {
 
     Stopwatch watch = Stopwatch()..start();
     try {
-      final analysisServer = await _getAnalysisServerWrapper(projectId);
+      final analysisServer = await _getAnalysisServerWrapper(projectId, source: source);
 
       Map<String, String> docInfo =
           await analysisServer.dartdoc(source, offset);
@@ -602,7 +606,7 @@ class CommonServer {
 
     Stopwatch watch = Stopwatch()..start();
     try {
-      final analysisServer = await _getAnalysisServerWrapper(projectId);
+      final analysisServer = await _getAnalysisServerWrapper(projectId, source: source);
       CompleteResponse response = await analysisServer.complete(source, offset);
       log.info('PERF: Computed completions in ${watch.elapsedMilliseconds}ms.');
       return response;
@@ -622,7 +626,7 @@ class CommonServer {
     }
 
     Stopwatch watch = Stopwatch()..start();
-    final analysisServer = await _getAnalysisServerWrapper(projectId);
+    final analysisServer = await _getAnalysisServerWrapper(projectId, source: source);
     FixesResponse response = await analysisServer.getFixes(source, offset);
     log.info('PERF: Computed fixes in ${watch.elapsedMilliseconds}ms.');
     return response;
@@ -637,7 +641,7 @@ class CommonServer {
     }
 
     Stopwatch watch = Stopwatch()..start();
-    final analysisServer = await _getAnalysisServerWrapper(projectId);
+    final analysisServer = await _getAnalysisServerWrapper(projectId, source: source);
     var response = await analysisServer.getAssists(source, offset);
     log.info('PERF: Computed assists in ${watch.elapsedMilliseconds}ms.');
     return response;
@@ -651,7 +655,7 @@ class CommonServer {
 
     Stopwatch watch = Stopwatch()..start();
 
-    final analysisServer = await _getAnalysisServerWrapper(projectId);
+    final analysisServer = await _getAnalysisServerWrapper(projectId, source: source);
     FormatResponse response = await analysisServer.format(source, offset);
     log.info('PERF: Computed format in ${watch.elapsedMilliseconds}ms.');
     return response;

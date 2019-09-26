@@ -23,14 +23,14 @@ class ProjectManager {
   ProjectManager(this.sdkPath)
     : _projectsDirectory = Directory.systemTemp.createTempSync('dartpad');
 
-  Project _createProject(String name) {
-    final projectDirectory = Directory(path.join(_projectsDirectory.path, name))
+  Project _createProject(String projectId) {
+    final projectDirectory = Directory(path.join(_projectsDirectory.path, projectId))
         ..createSync(recursive: true);
-    return _projectsByName[name] = Project(sdkPath, projectDirectory);
+    return _projectsByName[projectId] = Project(sdkPath, projectDirectory);
   }
 
-  Project createProjectIfNecessary(String name) =>
-      _projectsByName[name] ??= _createProject(name);
+  Project createProjectIfNecessary(String projectId) =>
+      _projectsByName[projectId] ??= _createProject(projectId);
 }
 
 /// Handle provisioning package:flutter_web and related work.

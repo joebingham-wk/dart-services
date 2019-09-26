@@ -58,6 +58,8 @@ class Compiler {
       'build', '-r', '-o${temp.path}'];
 
       final project = projectManager.createProjectIfNecessary(projectId);
+      // TODO see if we can only call this when we need to instead of every time
+      await project.initFlutterWeb(input);
 
       String compileTarget = path.join(project.projectDirectory
           .path, 'web', kMainDart);
