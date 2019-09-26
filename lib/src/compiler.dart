@@ -124,19 +124,20 @@ class Compiler {
         arguments.addAll(<String>['-s', project.summaryFilePath]);
       }
 
-      String compileTarget = path.join(temp.path, kMainDart);
+      String compileTarget = path.join(project.projectDirectory.path,
+          kMainDart);
       File mainDart = File(compileTarget);
       await mainDart.writeAsString(input);
 
-      arguments.addAll(<String>['-o', path.join(temp.path, '$kMainDart.js')]);
+      arguments.addAll(<String>['-o', path.join(project.projectDirectory.path, '$kMainDart.js')]);
       arguments.add('--single-out-file');
       arguments.addAll(<String>['--module-name', 'dartpad_main']);
       arguments.add(compileTarget);
-      arguments.addAll(<String>['--library-root', temp.path]);
+      arguments.addAll(<String>['--library-root', project.projectDirectory.path]);
 
-      File mainJs = File(path.join(temp.path, '$kMainDart.js'));
+      File mainJs = File(path.join(project.projectDirectory.path, '$kMainDart.js'));
 
-      _logger.info('About to exec dartdevc with:  $arguments');
+      _logger.info('About to exec dartdevc with: $arguments');
 
       final WorkResponse response =
       await _ddcDriver.doWork(WorkRequest()..arguments.addAll(arguments));
@@ -157,8 +158,8 @@ class Compiler {
       _logger.warning('Compiler failed: $e\n$st');
       rethrow;
     } finally {
-      await temp.delete(recursive: true);
-      _logger.info('temp folder removed: ${temp.path}');
+//      await temp.delete(recursive: true);
+      _logger.info('Decided no to delete: ${project.projectDirectory.path}');
     }
   }
 
