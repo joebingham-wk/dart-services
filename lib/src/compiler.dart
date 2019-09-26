@@ -9,6 +9,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:bazel_worker/driver.dart';
+import 'package:dart_services/src/pub.dart';
 import 'package:logging/logging.dart';
 import 'package:meta/meta.dart';
 import 'package:path/path.dart' as path;
@@ -106,40 +107,39 @@ class Compiler {
   }
 
   /// Compile the given string and return the resulting [DDCCompilationResults].
-  Future<DDCCompilationResults> compileDDC(String input, String sessionId)
+  Future<DDCCompilationResults> compileDDC(String input,
+      {@required String projectId})
   async {
-    Directory dir =
-        Directory('${Directory.current.path}/dartpadSessionCache/$sessionId');
-    await dir.create(recursive: true);
+    Set<String> imports = getAllImportsFor(input);
+
+    Directory temp = await Directory.systemTemp.createTemp('dartpad');
+    final project = projectManager.createProjectIfNecessary(projectId);
 
     try {
       List<String> arguments = <String>[
         '--modules=amd',
       ];
 
-      print('creating dir');
-      print('path is ${dir.path}');
-      String compileTarget = path.join(dir.path, kMainDart);
+      if (project.usesFlutterWeb(imports)) {
+        arguments.addAll(<String>['-s', project.summaryFilePath]);
+      }
+
+      String compileTarget = path.join(temp.path, kMainDart);
       File mainDart = File(compileTarget);
       await mainDart.writeAsString(input);
 
-//      final pubspecInput = _generatePubspec(imports);
-//      File pubspec = File(path.join(dir.path, 'pubspec.yaml'));
-//      await pubspec.writeAsString(pubspecInput);
-
-
-      arguments.addAll(<String>['-o', path.join(dir.path, '$kMainDart.js')]);
+      arguments.addAll(<String>['-o', path.join(temp.path, '$kMainDart.js')]);
       arguments.add('--single-out-file');
       arguments.addAll(<String>['--module-name', 'dartpad_main']);
       arguments.add(compileTarget);
-      arguments.addAll(<String>['--library-root', dir.path]);
+      arguments.addAll(<String>['--library-root', temp.path]);
 
-      File mainJs = File(path.join(dir.path, '$kMainDart.js'));
+      File mainJs = File(path.join(temp.path, '$kMainDart.js'));
 
       _logger.info('About to exec dartdevc with:  $arguments');
 
       final WorkResponse response =
-          await _ddcDriver.doWork(WorkRequest()..arguments.addAll(arguments));
+      await _ddcDriver.doWork(WorkRequest()..arguments.addAll(arguments));
 
       if (response.exitCode != 0) {
         return DDCCompilationResults.failed(<CompilationProblem>[
@@ -157,16 +157,12 @@ class Compiler {
       _logger.warning('Compiler failed: $e\n$st');
       rethrow;
     } finally {
-//      await dir.delete(recursive: true);
-      _logger.info('dir folder removed: ${dir.path}');
+      await temp.delete(recursive: true);
+      _logger.info('temp folder removed: ${temp.path}');
     }
   }
 
   Future<void> dispose() => _ddcDriver.terminateWorkers();
-
-//  String _generatePubspec(List<String> inputs) {
-//    return
-//  }
 }
 
 /// The result of a dart2js compile.
