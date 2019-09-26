@@ -68,11 +68,6 @@ class Compiler {
     try {
       List<String> arguments = <String> ['run', 'build_runner',
       'build', '-r', '-o${temp.path}'];
-//      if (!returnSourceMap) arguments.add('--no-source-maps');
-//      print('The packages are ${flutterWebManager.packagesFilePath}');
-//      arguments.add('--packages=${flutterWebManager.packagesFilePath}');
-//      arguments.add('-o$kMainDart.js');
-//      arguments.add(kMainDart);
 
       String compileTarget = path.join(flutterWebManager.projectDirectory
           .path, 'web', kMainDart);
@@ -84,17 +79,12 @@ class Compiler {
       File mainSourceMap = File(path.join(temp.path, 'web', '$kMainDart.js'
           '.map'));
 
-//      final String dart2JSPath = path.join(sdkPath, 'bin', 'dart2js');
-
       final String pubPath = path.join(sdkPath, 'bin', 'pub');
 
       _logger.info('About to exec: $pubPath $arguments');
 
       ProcessResult result = Process.runSync(pubPath, arguments, workingDirectory:
           flutterWebManager.projectDirectory.path);
-
-//      ProcessResult result =
-//          Process.runSync(dart2JSPath, arguments, workingDirectory: temp.path);
 
       if (result.exitCode != 0) {
         _logger.warning(result.stderr);
@@ -124,7 +114,8 @@ class Compiler {
   }
 
   /// Compile the given string and return the resulting [DDCCompilationResults].
-  Future<DDCCompilationResults> compileDDC(String input) async {
+  Future<DDCCompilationResults> compileDDC(String input, String sessionId)
+  async {
     Set<String> imports = getAllImportsFor(input);
     if (!importsOkForCompile(imports)) {
       return DDCCompilationResults.failed(<CompilationProblem>[
@@ -134,28 +125,33 @@ class Compiler {
       ]);
     }
 
-    Directory temp = await Directory.systemTemp.createTemp('dartpad');
+    Directory dir =
+        Directory('${Directory.current.path}/dartpadSessionCache/$sessionId');
+    await dir.create(recursive: true);
 
     try {
       List<String> arguments = <String>[
         '--modules=amd',
       ];
 
-      if (flutterWebManager.usesFlutterWeb(imports)) {
-        arguments.addAll(<String>['-s', flutterWebManager.summaryFilePath]);
-      }
-
-      String compileTarget = path.join(temp.path, kMainDart);
+      print('creating dir');
+      print('path is ${dir.path}');
+      String compileTarget = path.join(dir.path, kMainDart);
       File mainDart = File(compileTarget);
       await mainDart.writeAsString(input);
 
-      arguments.addAll(<String>['-o', path.join(temp.path, '$kMainDart.js')]);
+      final pubspecInput = _generatePubspec(imports);
+      File pubspec = File(path.join(dir.path, 'pubspec.yaml'));
+      await pubspec.writeAsString(pubspecInput);
+
+
+      arguments.addAll(<String>['-o', path.join(dir.path, '$kMainDart.js')]);
       arguments.add('--single-out-file');
       arguments.addAll(<String>['--module-name', 'dartpad_main']);
       arguments.add(compileTarget);
-      arguments.addAll(<String>['--library-root', temp.path]);
+      arguments.addAll(<String>['--library-root', dir.path]);
 
-      File mainJs = File(path.join(temp.path, '$kMainDart.js'));
+      File mainJs = File(path.join(dir.path, '$kMainDart.js'));
 
       _logger.info('About to exec dartdevc with:  $arguments');
 
@@ -178,12 +174,16 @@ class Compiler {
       _logger.warning('Compiler failed: $e\n$st');
       rethrow;
     } finally {
-      await temp.delete(recursive: true);
-      _logger.info('temp folder removed: ${temp.path}');
+//      await dir.delete(recursive: true);
+      _logger.info('dir folder removed: ${dir.path}');
     }
   }
 
   Future<void> dispose() => _ddcDriver.terminateWorkers();
+
+//  String _generatePubspec(List<String> inputs) {
+//    return
+//  }
 }
 
 /// The result of a dart2js compile.

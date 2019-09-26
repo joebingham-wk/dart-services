@@ -343,7 +343,7 @@ class CommonServer {
       description: 'Compile the given Dart source code and return the '
           'resulting JavaScript; this uses the DDC compiler.')
   Future<CompileDDCResponse> compileDDC(CompileRequest request) {
-    return _compileDDC(request.source);
+    return _compileDDC(request.source, request.sessionId);
   }
 
   @ApiMethod(
@@ -489,10 +489,13 @@ class CommonServer {
     });
   }
 
-  Future<CompileDDCResponse> _compileDDC(String source) async {
+  Future<CompileDDCResponse> _compileDDC(String source, String sessionId)
+  async {
     if (source == null) {
       throw BadRequestError('Missing parameter: \'source\'');
     }
+
+    print('compiling');
 
     await _checkPackageReferencesInitFlutterWeb(source);
 
@@ -500,6 +503,10 @@ class CommonServer {
     final memCacheKey = '%%COMPILE_DDC:v0:source:$sourceHash';
 
     final result = await checkCache(memCacheKey);
+    final alreadyHasSessionFolder = await _hasSessionFolder(sessionId);
+
+    print('do I exist? ' + alreadyHasSessionFolder.toString());
+
     if (result != null) {
       log.info('CACHE: Cache hit for compileDDC');
       final resultObj = JsonDecoder().convert(result);
@@ -512,7 +519,8 @@ class CommonServer {
     log.info('CACHE: MISS for compileDDC');
     Stopwatch watch = Stopwatch()..start();
 
-    return compiler.compileDDC(source).then((DDCCompilationResults results) {
+    return compiler.compileDDC(source, sessionId).then((DDCCompilationResults
+    results) {
       if (results.hasOutput) {
         final lineCount = source.split('\n').length;
         final outputSize = (results.compiledJS.length + 512) ~/ 1024;
@@ -663,6 +671,12 @@ class CommonServer {
         return;
       }
     }
+  }
+
+  Future<bool> _hasSessionFolder(String sessionId) async {
+    final sessionDir =
+        Directory('${Directory.current.path}/dartpadSessionCache/$sessionId');
+    return sessionDir.exists();
   }
 }
 

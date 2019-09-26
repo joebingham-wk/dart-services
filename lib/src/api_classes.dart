@@ -88,6 +88,7 @@ class Location {
 class CompileRequest {
   @ApiProperty(required: true, description: 'The Dart source.')
   String source;
+  String sessionId;
 
   @ApiProperty(
       description:
