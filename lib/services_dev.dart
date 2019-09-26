@@ -123,19 +123,19 @@ class EndpointsServer {
   bool discoveryEnabled;
   CommonServer commonServer;
   ProjectManager flutterWebManager;
-  StaticFileServer staticFileServer = StaticFileServer();
+  StaticFileServer staticFileServer;
   HttpRequest test;
 
   EndpointsServer._(String sdkPath, this.port) {
     discoveryEnabled = false;
 
     flutterWebManager = ProjectManager(sdkPath);
+    staticFileServer = StaticFileServer(flutterWebManager);
     commonServer =
         CommonServer(sdkPath, flutterWebManager, _ServerContainer(), _Cache());
     commonServer.init();
 
     apiServer = ApiServer(apiPrefix: '/api', prettyPrint: true)
-      ..addApi(staticFileServer)
       ..addApi(commonServer);
 
     pipeline = Pipeline()
@@ -143,10 +143,8 @@ class EndpointsServer {
         .addMiddleware(_createCustomCorsHeadersMiddleware())
         .addMiddleware(createMiddleware(requestHandler: router.handler));
 
-    router.get('/api/getRouterPath/v1/<id>/<path|.+>', (Request request, String
-    id,
-        String path) {
-      return Response.ok(jsonEncode({'id': id, 'path': path}));
+    router.get('/api/compiled_output/v1/session/<sessionId>/<path|.+>', (Request request, String sessionId, String path) {
+      return staticFileServer.getCompiledOutput(sessionId, path);
     });
 
     handler = pipeline.addHandler(_apiHandler);

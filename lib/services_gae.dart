@@ -73,7 +73,7 @@ class GaeServer {
     discoveryEnabled = false;
     fileRelayServer = FileRelayServer();
     flutterWebManager = ProjectManager(sdkPath);
-    staticFileServer = StaticFileServer();
+    staticFileServer = StaticFileServer(flutterWebManager);
 
     commonServer = CommonServer(
         sdkPath,

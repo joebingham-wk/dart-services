@@ -31,6 +31,8 @@ class ProjectManager {
 
   Project createProjectIfNecessary(String projectId) =>
       _projectsByName[projectId] ??= _createProject(projectId);
+
+  Project getProject(String projectId) => _projectsByName[projectId];
 }
 
 /// Handle provisioning package:flutter_web and related work.
@@ -50,6 +52,8 @@ class Project {
   }
 
   Directory get projectDirectory => _projectDirectory;
+
+  Directory get outputDirectory => Directory(path.join(_projectDirectory.path, 'build'));
 
   String get packagesFilePath => path.join(projectDirectory.path, '.packages');
 
