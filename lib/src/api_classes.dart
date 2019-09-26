@@ -114,10 +114,9 @@ class CompileDDCRequest extends BaseRequest {
 }
 
 class CompileDDCResponse {
-  final String result;
-  final String modulesBaseUrl;
+  final String entrypointUrl;
 
-  CompileDDCResponse(this.result, this.modulesBaseUrl);
+  CompileDDCResponse(this.entrypointUrl);
 }
 
 class CounterRequest extends BaseRequest {

@@ -537,7 +537,7 @@ class CommonServer {
 
       if (results.hasOutput) {
         print('still going..');
-        return CompileDDCResponse(results.compiledJS, results.modulesBaseUrl);
+        return CompileDDCResponse(results.entrypointUrl);
       } else {
         final problems = results.problems;
         final errors = problems.map(_printCompileProblem).join('\n');

@@ -150,9 +150,7 @@ class Compiler {
       } else {
         print('it worked!');
         final DDCCompilationResults results = DDCCompilationResults(
-          compiledJS: '',
-          modulesBaseUrl: 'https://storage.googleapis.com/'
-              'compilation_artifacts/$_sdkVersion/',
+          entrypointUrl: '/api/compiled_output/v1/session/$projectId/web/main.dart.js',
         );
         return results;
       }
@@ -193,18 +191,16 @@ class CompilationResults {
 
 /// The result of a DDC compile.
 class DDCCompilationResults {
-  final String compiledJS;
-  final String modulesBaseUrl;
+  final String entrypointUrl;
   final List<CompilationProblem> problems;
 
-  DDCCompilationResults({this.compiledJS, this.modulesBaseUrl})
+  DDCCompilationResults({this.entrypointUrl})
       : problems = const <CompilationProblem>[];
 
   DDCCompilationResults.failed(this.problems)
-      : compiledJS = null,
-        modulesBaseUrl = null;
+      : entrypointUrl = null;
 
-  bool get hasOutput => compiledJS != null && compiledJS.isNotEmpty;
+  bool get hasOutput => entrypointUrl != null;
 
   /// This is true if there were no errors.
   bool get success => problems.isEmpty;

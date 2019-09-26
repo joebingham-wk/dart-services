@@ -101,7 +101,7 @@ void buildStorageArtifacts() {
 }
 
 void _buildStorageArtifacts(Directory dir) {
-  String pubspec = FlutterWebManager.createPubspec(true);
+  String pubspec = Project.createPubspec(true);
   joinFile(dir, ['pubspec.yaml']).writeAsStringSync(pubspec);
 
   // run pub get

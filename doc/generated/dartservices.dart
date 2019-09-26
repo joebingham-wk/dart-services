@@ -500,28 +500,21 @@ class CandidateFix {
 }
 
 class CompileDDCResponse {
-  core.String modulesBaseUrl;
-  core.String result;
+  core.String entrypointUrl;
 
   CompileDDCResponse();
 
   CompileDDCResponse.fromJson(core.Map _json) {
-    if (_json.containsKey("modulesBaseUrl")) {
-      modulesBaseUrl = _json["modulesBaseUrl"];
-    }
-    if (_json.containsKey("result")) {
-      result = _json["result"];
+    if (_json.containsKey("entrypointUrl")) {
+      entrypointUrl = _json["entrypointUrl"];
     }
   }
 
   core.Map<core.String, core.Object> toJson() {
     final core.Map<core.String, core.Object> _json =
         new core.Map<core.String, core.Object>();
-    if (modulesBaseUrl != null) {
-      _json["modulesBaseUrl"] = modulesBaseUrl;
-    }
-    if (result != null) {
-      _json["result"] = result;
+    if (entrypointUrl != null) {
+      _json["entrypointUrl"] = entrypointUrl;
     }
     return _json;
   }
@@ -530,6 +523,7 @@ class CompileDDCResponse {
 class CompileRequest {
   /// Return the Dart to JS source map; optional (defaults to false).
   core.bool returnSourceMap;
+  core.String sessionId;
 
   /// The Dart source.
   core.String source;
@@ -539,6 +533,9 @@ class CompileRequest {
   CompileRequest.fromJson(core.Map _json) {
     if (_json.containsKey("returnSourceMap")) {
       returnSourceMap = _json["returnSourceMap"];
+    }
+    if (_json.containsKey("sessionId")) {
+      sessionId = _json["sessionId"];
     }
     if (_json.containsKey("source")) {
       source = _json["source"];
@@ -550,6 +547,9 @@ class CompileRequest {
         new core.Map<core.String, core.Object>();
     if (returnSourceMap != null) {
       _json["returnSourceMap"] = returnSourceMap;
+    }
+    if (sessionId != null) {
+      _json["sessionId"] = sessionId;
     }
     if (source != null) {
       _json["source"] = source;
