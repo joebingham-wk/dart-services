@@ -116,14 +116,6 @@ class Compiler {
     await project.initFlutterWeb(input);
 
     try {
-//      List<String> arguments = <String>[
-//        '--modules=amd',
-//      ];
-//
-//      if (project.usesFlutterWeb(imports)) {
-//        arguments.addAll(<String>['-s', project.summaryFilePath]);
-//      }
-
       String compileTarget = path.join(project.projectDirectory.path,
           kMainDart);
       File mainDart = File(compileTarget);
@@ -148,19 +140,7 @@ class Compiler {
       ProcessResult result = Process.runSync(pubPath, arguments, workingDirectory:
       project.projectDirectory.path);
 
-//      arguments.addAll(<String>['-o', path.join(project.projectDirectory.path, '$kMainDart.js')]);
-//      arguments.add('--single-out-file');
-//      arguments.addAll(<String>['--module-name', 'dartpad_main']);
-//      arguments.add(compileTarget);
-//      arguments.addAll(<String>['--library-root', project.projectDirectory.path]);
-
-      File mainJs = File(path.join(project.projectDirectory.path, 'build',
-          '$kMainDart.js'));
-
       _logger.info('About to exec dartdevc with: $arguments');
-
-//      final WorkResponse response =
-//      await _ddcDriver.doWork(WorkRequest()..arguments.addAll(arguments));
 
       if (result.exitCode != 0) {
         print('aww I broke');
