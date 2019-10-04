@@ -9,6 +9,7 @@ import 'package:dart_services/src/pub.dart';
 import 'package:http/http.dart' as http;
 import 'package:logging/logging.dart';
 import 'package:path/path.dart' as path;
+import 'package:uuid/uuid.dart';
 
 import 'sdk_manager.dart';
 
@@ -26,7 +27,14 @@ class ProjectManager {
   Project _createProject(String projectId) {
     final projectDirectory = Directory(path.join(_projectsDirectory.path, projectId))
         ..createSync(recursive: true);
-    return _projectsByName[projectId] = Project(sdkPath, projectDirectory);
+    return _projectsByName[projectId] = Project(sdkPath, projectDirectory, projectId);
+  }
+
+  Project createProjectWithoutId() {
+    final id = Uuid().v4();
+    _createProject(id);
+
+    return getProject(id);
   }
 
   Project createProjectIfNecessary(String projectId) =>
@@ -38,12 +46,11 @@ class ProjectManager {
 /// Handle provisioning package:flutter_web and related work.
 class Project {
   final String sdkPath;
+  final String id;
 
   Directory _projectDirectory;
 
-  bool _initedFlutterWeb = false;
-
-  Project(this.sdkPath, this._projectDirectory) {
+  Project(this.sdkPath, this._projectDirectory, this.id) {
     _init();
   }
 
@@ -105,8 +112,6 @@ $_samplePackageName:lib/
     Uint8List summaryContents = await http.readBytes(url);
     await File(path.join(_projectDirectory.path, 'flutter_web.sum'))
         .writeAsBytes(summaryContents);
-
-    _initedFlutterWeb = true;
   }
 
   String get summaryFilePath {
