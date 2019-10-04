@@ -84,17 +84,12 @@ class Compiler {
       File mainSourceMap = File(path.join(temp.path, 'web', '$kMainDart.js'
           '.map'));
 
-//      final String dart2JSPath = path.join(sdkPath, 'bin', 'dart2js');
-
       final String pubPath = path.join(sdkPath, 'bin', 'pub');
 
       _logger.info('About to exec: $pubPath $arguments');
 
-      ProcessResult result = Process.runSync('sudo', [pubPath, ...arguments, '--no-precompile'], workingDirectory:
+      ProcessResult result = await Process.run(pubPath, arguments, workingDirectory:
           flutterWebManager.projectDirectory.path);
-
-//      ProcessResult result =
-//          Process.runSync(dart2JSPath, arguments, workingDirectory: temp.path);
 
       if (result.exitCode != 0) {
         _logger.warning(result.stderr);
