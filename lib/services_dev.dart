@@ -10,10 +10,12 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:args/args.dart';
+import 'package:dart_services/src/static_file_server.dart';
 import 'package:logging/logging.dart';
 import 'package:rpc/rpc.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart' as shelf;
+import 'package:shelf_router/shelf_router.dart';
 
 import 'src/common.dart';
 import 'src/common_server.dart';
@@ -55,7 +57,7 @@ void main(List<String> args) {
     return;
   }
 
-  Logger.root.level = Level.FINER;
+  Logger.root.level = Level.FINEST;
   Logger.root.onRecord.listen((LogRecord record) {
     print(record);
     if (record.stackTrace != null) print(record.stackTrace);
@@ -80,7 +82,7 @@ class EndpointsServer {
 
   static Future<String> generateDiscovery(
       String sdkPath, String serverUrl) async {
-    FlutterWebManager flutterWebManager = FlutterWebManager(sdkPath);
+    ProjectManager flutterWebManager = ProjectManager(sdkPath);
     CommonServer commonServer =
         CommonServer(sdkPath, flutterWebManager, _ServerContainer(), _Cache());
     await commonServer.init();
@@ -115,16 +117,20 @@ class EndpointsServer {
 
   Pipeline pipeline;
   Handler handler;
+  Router router = Router();
 
   ApiServer apiServer;
   bool discoveryEnabled;
   CommonServer commonServer;
-  FlutterWebManager flutterWebManager;
+  ProjectManager flutterWebManager;
+  StaticFileServer staticFileServer;
+  HttpRequest test;
 
   EndpointsServer._(String sdkPath, this.port) {
     discoveryEnabled = false;
 
-    flutterWebManager = FlutterWebManager(sdkPath);
+    flutterWebManager = ProjectManager(sdkPath, projectsDirectory: '.dart_tool/dart_services_projects');
+    staticFileServer = StaticFileServer(flutterWebManager);
     commonServer =
         CommonServer(sdkPath, flutterWebManager, _ServerContainer(), _Cache());
     commonServer.init();
@@ -134,7 +140,12 @@ class EndpointsServer {
 
     pipeline = Pipeline()
         .addMiddleware(logRequests())
-        .addMiddleware(_createCustomCorsHeadersMiddleware());
+        .addMiddleware(_createCustomCorsHeadersMiddleware())
+        .addMiddleware(createMiddleware(requestHandler: router.handler));
+
+    router.get('/api/compiled_output/v1/session/<sessionId>/<path|.+>', (Request request, String sessionId, String path) {
+      return staticFileServer.getCompiledOutput(sessionId, path);
+    });
 
     handler = pipeline.addHandler(_apiHandler);
   }

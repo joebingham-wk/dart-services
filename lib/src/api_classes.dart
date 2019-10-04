@@ -56,7 +56,14 @@ class AnalysisIssue implements Comparable<AnalysisIssue> {
   String toString() => '$kind: $message [$line]';
 }
 
-class SourceRequest {
+abstract class BaseRequest {
+  String get sessionId;
+}
+
+class SourceRequest implements BaseRequest {
+  @ApiProperty(required: true)
+  String sessionId;
+
   @ApiProperty(required: true, description: 'The Dart source.')
   String source;
 
@@ -64,7 +71,10 @@ class SourceRequest {
   int offset;
 }
 
-class SourcesRequest {
+class SourcesRequest implements BaseRequest {
+  @ApiProperty(required: true)
+  String sessionId;
+
   @ApiProperty(required: true, description: 'Map of names to Sources.')
   Map<String, String> sources;
 
@@ -85,9 +95,12 @@ class Location {
   Location.from(this.sourceName, this.offset);
 }
 
-class CompileRequest {
+class CompileRequest implements BaseRequest {
   @ApiProperty(required: true, description: 'The Dart source.')
   String source;
+
+  @ApiProperty(required: true)
+  String sessionId;
 
   @ApiProperty(
       description:
@@ -102,19 +115,24 @@ class CompileResponse {
   CompileResponse(this.result, [this.sourceMap]);
 }
 
-class CompileDDCRequest {
+class CompileDDCRequest implements BaseRequest {
+  @ApiProperty(required: true)
+  String sessionId;
+
   @ApiProperty(required: true, description: 'The Dart source.')
   String source;
 }
 
 class CompileDDCResponse {
-  final String result;
-  final String modulesBaseUrl;
+  final String entrypointUrl;
 
-  CompileDDCResponse(this.result, this.modulesBaseUrl);
+  CompileDDCResponse(this.entrypointUrl);
 }
 
-class CounterRequest {
+class CounterRequest implements BaseRequest {
+  @ApiProperty(required: true)
+  String sessionId;
+
   @ApiProperty(required: true)
   String name;
 }

@@ -14,16 +14,36 @@ import 'sdk_manager.dart';
 
 Logger _logger = Logger('flutter_web');
 
+class ProjectManager {
+  final String sdkPath;
+  final Directory _projectsDirectory;
+
+  final Map<String, Project> _projectsByName = {};
+
+  ProjectManager(this.sdkPath, {String projectsDirectory})
+    : _projectsDirectory = projectsDirectory != null ? Directory(projectsDirectory).absolute : Directory.systemTemp.createTempSync('dartpad');
+
+  Project _createProject(String projectId) {
+    final projectDirectory = Directory(path.join(_projectsDirectory.path, projectId))
+        ..createSync(recursive: true);
+    return _projectsByName[projectId] = Project(sdkPath, projectDirectory);
+  }
+
+  Project createProjectIfNecessary(String projectId) =>
+      _projectsByName[projectId] ??= _createProject(projectId);
+
+  Project getProject(String projectId) => _projectsByName[projectId];
+}
+
 /// Handle provisioning package:flutter_web and related work.
-class FlutterWebManager {
+class Project {
   final String sdkPath;
 
   Directory _projectDirectory;
 
   bool _initedFlutterWeb = false;
 
-  FlutterWebManager(this.sdkPath) {
-    _projectDirectory = Directory.systemTemp.createTempSync('dartpad');
+  Project(this.sdkPath, this._projectDirectory) {
     _init();
   }
 
@@ -32,6 +52,8 @@ class FlutterWebManager {
   }
 
   Directory get projectDirectory => _projectDirectory;
+
+  Directory get outputDirectory => Directory(path.join(_projectDirectory.path, 'build'));
 
   String get packagesFilePath => path.join(projectDirectory.path, '.packages');
 

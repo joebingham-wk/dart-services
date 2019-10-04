@@ -31,9 +31,26 @@ final String _WARMUP_SRC = 'main() { int b = 2;  b++;   b. }';
 // Use very long timeouts to ensure that the server has enough time to restart.
 final Duration _ANALYSIS_SERVER_TIMEOUT = Duration(seconds: 35);
 
+class AnalysisServerWrapperManager {
+  final String sdkPath;
+  final ProjectManager _projectManager;
+  final Map<String, AnalysisServerWrapper> _wrappersByName = {};
+
+  AnalysisServerWrapperManager(this.sdkPath, this._projectManager);
+
+  AnalysisServerWrapper _createWrapper(String name) {
+    return AnalysisServerWrapper(sdkPath, _projectManager.createProjectIfNecessary(name));
+  }
+
+  AnalysisServerWrapper createWrapperIfNecessary(String name) =>
+      _wrappersByName[name] ??= _createWrapper(name);
+
+  Future<void> dispose() => Future.wait(_wrappersByName.values.map((wrapper) => wrapper.shutdown()));
+}
+
 class AnalysisServerWrapper {
   final String sdkPath;
-  final FlutterWebManager flutterWebManager;
+  final Project flutterWebManager;
 
   Future<AnalysisServer> _init;
   String mainPath;
