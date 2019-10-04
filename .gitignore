@@ -22,3 +22,6 @@ artifacts/
 
 # local configuration
 config.properties
+
+# IDE related
+.idea/

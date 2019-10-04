@@ -1,6 +1,6 @@
 {
  "kind": "discovery#restDescription",
- "etag": "9511ad5e62f9a85d39dbd491c411705fd3876af8",
+ "etag": "8d4d4001bad5c5000efabe673ed5320cd302b018",
  "discoveryVersion": "v1",
  "id": "dartservices:v1",
  "name": "dartservices",
@@ -17,6 +17,10 @@
    "id": "SourceRequest",
    "type": "object",
    "properties": {
+    "sessionId": {
+     "type": "string",
+     "required": true
+    },
     "source": {
      "type": "string",
      "description": "The Dart source.",
@@ -87,6 +91,10 @@
      "description": "The Dart source.",
      "required": true
     },
+    "sessionId": {
+     "type": "string",
+     "required": true
+    },
     "returnSourceMap": {
      "type": "boolean",
      "description": "Return the Dart to JS source map; optional (defaults to false)."
@@ -109,10 +117,7 @@
    "id": "CompileDDCResponse",
    "type": "object",
    "properties": {
-    "result": {
-     "type": "string"
-    },
-    "modulesBaseUrl": {
+    "entrypointUrl": {
      "type": "string"
     }
    }

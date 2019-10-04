@@ -18,10 +18,11 @@ dependencies:
   logging: ^0.11.0
   path: ^1.6.2
   shelf: ^0.7.0
+  shelf_router: ^0.7.1
   rpc: ^0.6.1
   uuid: ^2.0.0
   yaml: ^2.1.15
-  quiver: ^2.0.3
+  quiver: ">=0.25.0"
 
 dev_dependencies:
   discoveryapis_generator: ^0.9.11

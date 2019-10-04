@@ -9,12 +9,13 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:bazel_worker/driver.dart';
+import 'package:dart_services/src/pub.dart';
 import 'package:logging/logging.dart';
+import 'package:meta/meta.dart';
 import 'package:path/path.dart' as path;
 
 import 'common.dart';
 import 'flutter_web.dart';
-import 'pub.dart';
 import 'sdk_manager.dart';
 
 Logger _logger = Logger('compiler');
@@ -23,12 +24,12 @@ Logger _logger = Logger('compiler');
 /// compile at a time.
 class Compiler {
   final String sdkPath;
-  final FlutterWebManager flutterWebManager;
+  final ProjectManager projectManager;
 
   final BazelWorkerDriver _ddcDriver;
   String _sdkVersion;
 
-  Compiler(this.sdkPath, this.flutterWebManager)
+  Compiler(this.sdkPath, this.projectManager)
       : _ddcDriver = BazelWorkerDriver(
             () => Process.start(path.join(sdkPath, 'bin', 'dartdevc'),
                 <String>['--persistent_worker']),
@@ -36,60 +37,50 @@ class Compiler {
     _sdkVersion = SdkManager.sdk.version;
   }
 
-  bool importsOkForCompile(Set<String> imports) {
-    return !flutterWebManager.hasUnsupportedImport(imports);
-  }
-
   /// The version of the SDK this copy of dart2js is based on.
   String get version {
     return File(path.join(sdkPath, 'version')).readAsStringSync().trim();
   }
 
-  Future<CompilationResults> warmup({bool useHtml = false}) {
-    return compile(useHtml ? sampleCodeWeb : sampleCode);
+  Future<CompilationResults> warmup({bool useHtml = false, @required String projectId}) {
+    return compile(useHtml ? sampleCodeWeb : sampleCode, projectId: projectId);
   }
 
   /// Compile the given string and return the resulting [CompilationResults].
   Future<CompilationResults> compile(
     String input, {
     bool returnSourceMap = false,
+    @required String projectId,
   }) async {
-    Set<String> imports = getAllImportsFor(input);
-    if (!importsOkForCompile(imports)) {
-      return CompilationResults(problems: <CompilationProblem>[
-        CompilationProblem._(
-          'unsupported import: ${flutterWebManager.getUnsupportedImport(imports)}',
-        ),
-      ]);
-    }
-
     Directory temp = await Directory.systemTemp.createTemp('dartpad');
 
     try {
-      List<String> arguments = <String>[
-        '--suppress-hints',
-        '--terse',
-      ];
-      if (!returnSourceMap) arguments.add('--no-source-maps');
+      List<String> arguments = <String> ['run', 'build_runner',
+      'build', '-r', '-o${temp.path}'];
 
-      arguments.add('--packages=${flutterWebManager.packagesFilePath}');
-      arguments.add('-o$kMainDart.js');
-      arguments.add(kMainDart);
+      final project = projectManager.createProjectIfNecessary(projectId);
+      // TODO see if we can only call this when we need to instead of every time
+      await project.initFlutterWeb(input);
 
-      String compileTarget = path.join(temp.path, kMainDart);
+      String compileTarget = path.join(project.projectDirectory
+          .path, 'web', kMainDart);
       File mainDart = File(compileTarget);
+      await mainDart.create(recursive: true);
       await mainDart.writeAsString(input);
 
-      File mainJs = File(path.join(temp.path, '$kMainDart.js'));
-      File mainSourceMap = File(path.join(temp.path, '$kMainDart.js.map'));
+      File mainJs = File(path.join(temp.path, 'web', '$kMainDart.js'));
+      File mainSourceMap = File(path.join(temp.path, 'web', '$kMainDart.js'
+          '.map'));
 
-      final String dart2JSPath = path.join(sdkPath, 'bin', 'dart2js');
-      _logger.info('About to exec: $dart2JSPath $arguments');
+      final String pubPath = path.join(sdkPath, 'bin', 'pub');
 
-      ProcessResult result = await
-          Process.run(dart2JSPath, arguments, workingDirectory: temp.path);
+      _logger.info('About to exec: $pubPath $arguments');
+
+      ProcessResult result = Process.runSync(pubPath, arguments, workingDirectory:
+          project.projectDirectory.path);
 
       if (result.exitCode != 0) {
+        _logger.warning(result.stderr);
         final CompilationResults results =
             CompilationResults(problems: <CompilationProblem>[
           CompilationProblem._(result.stdout as String),
@@ -116,53 +107,50 @@ class Compiler {
   }
 
   /// Compile the given string and return the resulting [DDCCompilationResults].
-  Future<DDCCompilationResults> compileDDC(String input) async {
+  Future<DDCCompilationResults> compileDDC(String input,
+      {@required String projectId})
+  async {
     Set<String> imports = getAllImportsFor(input);
-    if (!importsOkForCompile(imports)) {
-      return DDCCompilationResults.failed(<CompilationProblem>[
-        CompilationProblem._(
-          'unsupported import: ${flutterWebManager.getUnsupportedImport(imports)}',
-        ),
-      ]);
-    }
 
-    Directory temp = await Directory.systemTemp.createTemp('dartpad');
+    final project = projectManager.createProjectIfNecessary(projectId);
+    await project.initFlutterWeb(input);
 
     try {
-      List<String> arguments = <String>[
-        '--modules=amd',
-      ];
-
-      if (flutterWebManager.usesFlutterWeb(imports)) {
-        arguments.addAll(<String>['-s', flutterWebManager.summaryFilePath]);
-      }
-
-      String compileTarget = path.join(temp.path, kMainDart);
+      String compileTarget = path.join(project.projectDirectory.path,
+          kMainDart);
       File mainDart = File(compileTarget);
+      mainDart.parent.createSync(recursive: true);
       await mainDart.writeAsString(input);
 
-      arguments.addAll(<String>['-o', path.join(temp.path, '$kMainDart.js')]);
-      arguments.add('--single-out-file');
-      arguments.addAll(<String>['--module-name', 'dartpad_main']);
-      arguments.add(compileTarget);
-      arguments.addAll(<String>['--library-root', temp.path]);
+      final String pubPath = path.join(sdkPath, 'bin', 'pub');
 
-      File mainJs = File(path.join(temp.path, '$kMainDart.js'));
+      final buildAlreadyExists = await Directory('${project.projectDirectory
+          .path}/build/').exists();
 
-      _logger.info('About to exec dartdevc with:  $arguments');
+      if (buildAlreadyExists) {
+        await Directory('${project.projectDirectory
+            .path}/build/').delete(recursive: true);
+      }
 
-      final WorkResponse response =
-          await _ddcDriver.doWork(WorkRequest()..arguments.addAll(arguments));
+      List<String> arguments = <String> ['run', 'build_runner',
+      'build', '-obuild'];
 
-      if (response.exitCode != 0) {
+      _logger.info('About to exec: $pubPath $arguments');
+
+      ProcessResult result = await Process.run(pubPath, arguments, workingDirectory:
+      project.projectDirectory.path);
+
+      _logger.info('About to exec dartdevc with: $arguments');
+
+      if (result.exitCode != 0) {
+        print('aww I broke');
         return DDCCompilationResults.failed(<CompilationProblem>[
-          CompilationProblem._(response.output),
+          CompilationProblem._(result.stdout.toString()),
         ]);
       } else {
+        print('it worked!');
         final DDCCompilationResults results = DDCCompilationResults(
-          compiledJS: await mainJs.readAsString(),
-          modulesBaseUrl: 'https://storage.googleapis.com/'
-              'compilation_artifacts/$_sdkVersion/',
+          entrypointUrl: '/api/compiled_output/v1/session/$projectId/web/main.dart.js',
         );
         return results;
       }
@@ -170,8 +158,8 @@ class Compiler {
       _logger.warning('Compiler failed: $e\n$st');
       rethrow;
     } finally {
-      await temp.delete(recursive: true);
-      _logger.info('temp folder removed: ${temp.path}');
+//      await temp.delete(recursive: true);
+      _logger.info('Decided not to delete: ${project.projectDirectory.path}');
     }
   }
 
@@ -203,18 +191,16 @@ class CompilationResults {
 
 /// The result of a DDC compile.
 class DDCCompilationResults {
-  final String compiledJS;
-  final String modulesBaseUrl;
+  final String entrypointUrl;
   final List<CompilationProblem> problems;
 
-  DDCCompilationResults({this.compiledJS, this.modulesBaseUrl})
+  DDCCompilationResults({this.entrypointUrl})
       : problems = const <CompilationProblem>[];
 
   DDCCompilationResults.failed(this.problems)
-      : compiledJS = null,
-        modulesBaseUrl = null;
+      : entrypointUrl = null;
 
-  bool get hasOutput => compiledJS != null && compiledJS.isNotEmpty;
+  bool get hasOutput => entrypointUrl != null;
 
   /// This is true if there were no errors.
   bool get success => problems.isEmpty;
