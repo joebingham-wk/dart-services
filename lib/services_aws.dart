@@ -60,7 +60,7 @@ class AwsServer {
 
   bool discoveryEnabled;
   rpc.ApiServer apiServer;
-  FlutterWebManager flutterWebManager;
+  ProjectManager flutterWebManager;
   CommonServer commonServer;
   FileRelayServer fileRelayServer;
 
@@ -70,7 +70,7 @@ class AwsServer {
 
     discoveryEnabled = false;
     fileRelayServer = FileRelayServer();
-    flutterWebManager = FlutterWebManager(sdkPath);
+    flutterWebManager = ProjectManager(sdkPath);
     commonServer = CommonServer(
         sdkPath,
         flutterWebManager,
