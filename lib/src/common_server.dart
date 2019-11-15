@@ -278,6 +278,25 @@ class CommonServer {
     log.level = Level.ALL;
   }
 
+  static const String sessionIdCookieName = 'dart-services.session-id';
+
+  /// Returns the session ID cookie for the current request.
+  ///
+  /// Even if the original request does not have a cookie, the session cookie
+  /// middleware should have created a new one.
+  ///
+  /// If the session cookie doesn't exist, then something went wrong, and
+  /// an internal server error will be thrown.
+  String get _sessionId {
+    final sessionId = context.requestCookies
+        .firstWhere((cookie) => cookie.name == sessionIdCookieName, orElse: () => null)
+        ?.value;
+    if (sessionId == null) {
+      throw InternalServerError('Session cookie was not created properly');
+    }
+    return sessionId;
+  }
+
   Future<void> init() async {
     analysisServerManager = AnalysisServerWrapperManager(sdkPath, flutterWebManager);
     compiler = Compiler(sdkPath, flutterWebManager);
@@ -308,7 +327,7 @@ class CommonServer {
           'Analyze the given Dart source code and return any resulting '
           'analysis errors or warnings.')
   Future<AnalysisResults> analyze(SourceRequest request) {
-    return _analyze(request.source, projectId: request.sessionId);
+    return _analyze(request.source, projectId: _sessionId);
   }
 
   @ApiMethod(
@@ -318,7 +337,7 @@ class CommonServer {
           'resulting JavaScript; this uses the dart2js compiler.')
   Future<CompileResponse> compile(CompileRequest request) {
     return _compileDart2js(request.source,
-        projectId: request.sessionId,
+        projectId: _sessionId,
         returnSourceMap: request.returnSourceMap ?? false);
   }
 
@@ -328,7 +347,7 @@ class CommonServer {
       description: 'Compile the given Dart source code and return the '
           'resulting JavaScript; this uses the DDC compiler.')
   Future<CompileDDCResponse> compileDDC(CompileRequest request) {
-    return _compileDDC(request.source, request.sessionId);
+    return _compileDDC(request.source, _sessionId);
   }
 
   @ApiMethod(
@@ -343,7 +362,7 @@ class CommonServer {
       throw BadRequestError('Missing parameter: \'offset\'');
     }
 
-    return _complete(source: request.source, offset: request.offset, projectId: request.sessionId);
+    return _complete(source: request.source, offset: request.offset, projectId: _sessionId);
   }
 
   @ApiMethod(
@@ -355,7 +374,7 @@ class CommonServer {
       throw BadRequestError('Missing parameter: \'offset\'');
     }
 
-    return _fixes(source: request.source, offset: request.offset, projectId: request.sessionId);
+    return _fixes(source: request.source, offset: request.offset, projectId: _sessionId);
   }
 
   @ApiMethod(
@@ -367,7 +386,7 @@ class CommonServer {
       throw BadRequestError('Missing parameter: \'offset\'');
     }
 
-    return _assists(source: request.source, offset: request.offset, projectId: request.sessionId);
+    return _assists(source: request.source, offset: request.offset, projectId: _sessionId);
   }
 
   @ApiMethod(
@@ -377,7 +396,7 @@ class CommonServer {
           'If an offset is supplied in the request, the new position for that '
           'offset in the formatted code will be returned.')
   Future<FormatResponse> format(SourceRequest request) {
-    return _format(request.source, offset: request.offset, projectId: request.sessionId);
+    return _format(request.source, offset: request.offset, projectId: _sessionId);
   }
 
   @ApiMethod(
@@ -386,7 +405,7 @@ class CommonServer {
       description: 'Return the relevant dartdoc information for the element at '
           'the given offset.')
   Future<DocumentResponse> document(SourceRequest request) {
-    return _document(source: request.source, offset: request.offset, projectId: request.sessionId);
+    return _document(source: request.source, offset: request.offset, projectId: _sessionId);
   }
 
   @ApiMethod(

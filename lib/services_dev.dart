@@ -16,6 +16,8 @@ import 'package:rpc/rpc.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart' as shelf;
 import 'package:shelf_router/shelf_router.dart';
+import 'package:shelf_cookie/shelf_cookie.dart';
+import 'package:uuid/uuid.dart';
 
 import 'src/common.dart';
 import 'src/common_server.dart';
@@ -141,7 +143,8 @@ class EndpointsServer {
     pipeline = Pipeline()
         .addMiddleware(logRequests())
         .addMiddleware(_createCustomCorsHeadersMiddleware())
-        .addMiddleware(createMiddleware(requestHandler: router.handler));
+        .addMiddleware(cookieParser())
+        .addMiddleware(_createSessionCookiesMiddleware());
 
     router.get('/api/compiled_output/v1/session/<sessionId>/<path|.+>', (Request request, String sessionId, String path) {
       return staticFileServer.getCompiledOutput(sessionId, path);
@@ -194,6 +197,20 @@ Stack Trace: ${stackTrace.toString()}
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
       'Access-Control-Allow-Headers':
           'Origin, X-Requested-With, Content-Type, Accept, x-goog-api-client'
+    });
+  }
+
+  Middleware _createSessionCookiesMiddleware() {
+    return createMiddleware(requestHandler: (req) {
+      final cookies = req.context['cookies'] as CookieParser;
+      final dartServicesCookie = cookies.get(CommonServer.sessionIdCookieName).value ?? Uuid().v4();
+      // This cookies instance is what will be used to populate the `Set-Cookie`
+      // header in the response. So, we want to clear the cookies and add in the
+      // session cookie to be set on the client.
+      cookies
+        ..clear()
+        ..set(CommonServer.sessionIdCookieName, dartServicesCookie);
+      return null;
     });
   }
 }
