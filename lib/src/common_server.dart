@@ -23,7 +23,6 @@ import 'api_classes.dart';
 import 'common.dart';
 import 'compiler.dart';
 import 'flutter_web.dart';
-import 'pub.dart';
 import 'sdk_manager.dart';
 
 final Duration _standardExpiration = Duration(hours: 1);
@@ -282,21 +281,6 @@ class CommonServer {
   Future<void> init() async {
     analysisServerManager = AnalysisServerWrapperManager(sdkPath, flutterWebManager);
     compiler = Compiler(sdkPath, flutterWebManager);
-
-//    await analysisServer.init();
-
-//    unawaited(analysisServer.onExit.then((int code) {
-//      log.severe('analysisServer exited, code: $code');
-//      if (code != 0) {
-//        exit(code);
-//      }
-//    }));
-  }
-
-  Future<void> warmup({bool useHtml = false}) async {
-//    await flutterWebManager.warmup();
-//    await compiler.warmup(useHtml: useHtml);
-//    await analysisServer.warmup(useHtml: useHtml);
   }
 
   Future<void> restart() async {
@@ -305,7 +289,6 @@ class CommonServer {
     log.info('Analysis Servers shutdown');
 
     await init();
-    await warmup();
 
     log.warning('Restart complete');
   }
@@ -317,14 +300,6 @@ class CommonServer {
       Future<dynamic>.sync(cache.shutdown)
     ]);
   }
-
-//  static const wIdeSessionCookieName = 'w_ide';
-//
-//  String getProjectIdFromCookie() {
-//    final sessionCookie = context.requestCookies.firstWhere((cookie) => cookie.name == wIdeSessionCookieName, orElse: () => null);
-//    if (sessionCookie == null) throw BadRequestError('Must have session cookie');
-//    return sessionCookie.value;
-//  }
 
   @ApiMethod(
       method: 'POST',
@@ -514,15 +489,10 @@ class CommonServer {
       throw BadRequestError('Missing parameter: \'source\'');
     }
 
-    print('compiling');
-
     final sourceHash = _hashSource(source);
     final memCacheKey = '%%COMPILE_DDC:v0:source:$sourceHash';
 
     final result = await checkCache(memCacheKey);
-    final alreadyHasSessionFolder = await _hasSessionFolder(sessionId);
-
-    print('do I exist? ' + alreadyHasSessionFolder.toString());
 
     if (result != null) {
       log.info('CACHE: Cache hit for compileDDC');
@@ -533,10 +503,7 @@ class CommonServer {
 
     return compiler.compileDDC(source, projectId: sessionId).then(
             (DDCCompilationResults results) {
-              print('things are going great.');
-
       if (results.hasOutput) {
-        print('still going..');
         return CompileDDCResponse(results.entrypointUrl);
       } else {
         final problems = results.problems;

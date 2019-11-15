@@ -123,25 +123,27 @@ Future setupTools(String sdkPath) async {
 
   print('SdKPath: $sdkPath');
 
-  FlutterWebManager flutterWebManager = FlutterWebManager(sdkPath);
+  ProjectManager projectManager = ProjectManager(sdkPath);
+
+  final project = projectManager.createProjectWithoutId();
 
   container = MockContainer();
   cache = MockCache();
-  server = CommonServer(sdkPath, flutterWebManager, container, cache);
+  server = CommonServer(sdkPath, projectManager, container, cache);
   await server.init();
 
   apiServer = ApiServer(apiPrefix: '/api', prettyPrint: true)..addApi(server);
 
   analysisServer =
-      analysis_server.AnalysisServerWrapper(sdkPath, flutterWebManager);
+      analysis_server.AnalysisServerWrapper(sdkPath, project);
   await analysisServer.init();
 
   print('Warming up analysis server');
   await analysisServer.warmup();
 
   print('Warming up compiler');
-  compiler = comp.Compiler(sdkPath, flutterWebManager);
-  await compiler.warmup();
+  compiler = comp.Compiler(sdkPath, projectManager);
+  await compiler.warmup(projectId: project.id);
   print('SetupTools done');
 }
 

@@ -61,7 +61,7 @@ void main() => defineTests();
 
 void defineTests() {
   AnalysisServerWrapper analysisServer;
-  FlutterWebManager flutterWebManager;
+  Project flutterWebManager;
 
   group('analysis_server', () {
     setUp(() async {
