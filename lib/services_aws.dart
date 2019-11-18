@@ -7,7 +7,6 @@ library services_aws;
 import 'dart:async';
 import 'dart:io' as io;
 
-import 'package:appengine/appengine.dart' as ae;
 import 'package:logging/logging.dart';
 import 'package:rpc/rpc.dart' as rpc;
 
@@ -87,7 +86,8 @@ class AwsServer {
 
   Future<dynamic> start([int awsPort = 8080]) async {
     await commonServer.init();
-    return ae.runAppEngine(requestHandler, port: awsPort);
+    var server = await io.HttpServer.bind('0.0.0.0', awsPort);
+    return server.listen(requestHandler);
   }
 
   Future<void> requestHandler(io.HttpRequest request) async {
