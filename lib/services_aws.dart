@@ -95,6 +95,7 @@ class AwsServer {
         .add('Access-Control-Allow-Methods', 'POST, OPTIONS');
     request.response.headers.add('Access-Control-Allow-Headers',
         'Origin, X-Requested-With, Content-Type, Accept');
+    request.response.headers.add('Access-Control-Allow-Origin', '*');
 
     if (request.method == 'OPTIONS') {
       await _processOptionsRequest(request);
