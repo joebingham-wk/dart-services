@@ -73,7 +73,7 @@ class EndpointsServer {
     EndpointsServer endpointsServer = EndpointsServer._(sdkPath, port);
 
     return shelf
-        .serve(endpointsServer.handler, InternetAddress.anyIPv4, port)
+        .serve(endpointsServer.handler, '0.0.0.0', port)
         .then((HttpServer server) {
       endpointsServer.server = server;
       return endpointsServer;

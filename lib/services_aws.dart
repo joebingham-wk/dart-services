@@ -87,7 +87,7 @@ class AwsServer {
   Future<dynamic> start([int awsPort = 8080]) async {
     await commonServer.init();
     var server = await io.HttpServer.bind('0.0.0.0', awsPort);
-    return server.listen(requestHandler);
+    server.listen(requestHandler);
   }
 
   Future<void> requestHandler(io.HttpRequest request) async {
