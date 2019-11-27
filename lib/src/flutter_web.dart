@@ -127,6 +127,7 @@ $_samplePackageName:lib/
   }
 
   String getUnsupportedImport(Set<String> imports) {
+    return null;
     // TODO(devoncarew): Should we support a white-listed set of package:
     // imports?
 
@@ -142,7 +143,7 @@ $_samplePackageName:lib/
       }
 
       // Don't allow file imports.
-      return import;
+      //return import;
     }
 
     return null;
@@ -153,7 +154,7 @@ $_samplePackageName:lib/
 
     ProcessResult result = await Process.run(
       path.join(sdkPath, 'bin', 'pub'),
-      <String>['get', '--no-precompile'],
+      <String>['get'],
       workingDirectory: _projectDirectory.path,
     );
 
