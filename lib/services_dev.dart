@@ -150,10 +150,11 @@ class EndpointsServer {
       final sessionId = cookies.get(CommonServer.sessionIdCookieName)?.value ?? Uuid().v4();
       final setCookie = Cookie(CommonServer.sessionIdCookieName, sessionId)
         ..maxAge = Duration(days: 365).inSeconds
+        ..httpOnly = true
         ..path = '/api';
 
       return Response(HttpStatus.ok,
-        headers: {HttpHeaders.setCookieHeader: '$setCookie'},
+        headers: {HttpHeaders.setCookieHeader: '$setCookie;SameSite=Strict'},
       );
     });
     router.get('/api/compiled_output/v1/session/<sessionId>/<path|.+>', (Request request, String sessionId, String path) {
@@ -203,7 +204,6 @@ Stack Trace: ${stackTrace.toString()}
 
   Middleware _createCustomCorsHeadersMiddleware() {
     return shelf_cors.createCorsHeadersMiddleware(corsHeaders: <String, String>{
-      'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
       'Access-Control-Allow-Headers':
           'Origin, X-Requested-With, Content-Type, Accept, x-goog-api-client'
