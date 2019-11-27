@@ -154,7 +154,7 @@ class EndpointsServer {
         ..path = '/api';
 
       return Response(HttpStatus.ok,
-        headers: {HttpHeaders.setCookieHeader: '$setCookie;SameSite=Strict'},
+        headers: {HttpHeaders.setCookieHeader: setCookie.toString()},
       );
     });
     router.get('/api/compiled_output/v1/session/<sessionId>/<path|.+>', (Request request, String sessionId, String path) {
