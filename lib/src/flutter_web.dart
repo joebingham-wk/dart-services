@@ -103,15 +103,6 @@ $_samplePackageName:lib/
         .writeAsString(pubspec);
 
     await _runPubGet();
-
-    final String sdkVersion = SdkManager.sdk.version;
-
-    // download and save the flutter_web.sum file
-    String url = 'https://storage.googleapis.com/compilation_artifacts/'
-        '$sdkVersion/flutter_web.sum';
-    Uint8List summaryContents = await http.readBytes(url);
-    await File(path.join(_projectDirectory.path, 'flutter_web.sum'))
-        .writeAsBytes(summaryContents);
   }
 
   String get summaryFilePath {
