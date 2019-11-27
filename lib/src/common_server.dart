@@ -16,6 +16,7 @@ import 'package:meta/meta.dart';
 import 'package:pedantic/pedantic.dart';
 import 'package:quiver/cache.dart';
 import 'package:rpc/rpc.dart';
+import 'package:shelf_cookie/shelf_cookie.dart';
 
 import '../version.dart';
 import 'analysis_server.dart';
@@ -278,7 +279,7 @@ class CommonServer {
     log.level = Level.ALL;
   }
 
-  static const String sessionIdCookieName = 'dart-services.session-id';
+  static const String sessionIdCookieName = 'dart-services-session-id';
 
   /// Returns the session ID cookie for the current request.
   ///
@@ -288,11 +289,12 @@ class CommonServer {
   /// If the session cookie doesn't exist, then something went wrong, and
   /// an internal server error will be thrown.
   String get _sessionId {
-    final sessionId = context.requestCookies
-        .firstWhere((cookie) => cookie.name == sessionIdCookieName, orElse: () => null)
-        ?.value;
+    final cookies = CookieParser.fromHeader(context.requestHeaders);
+    final sessionId = cookies.get(CommonServer.sessionIdCookieName)?.value;
     if (sessionId == null) {
-      throw InternalServerError('Session cookie was not created properly');
+      throw BadRequestError(
+          'Missing session cookie; ensure that CORS is configured properly'
+              ' and that the `session` endpoint is requested first');
     }
     return sessionId;
   }

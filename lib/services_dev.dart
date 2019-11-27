@@ -143,9 +143,19 @@ class EndpointsServer {
     pipeline = Pipeline()
         .addMiddleware(logRequests())
         .addMiddleware(_createCustomCorsHeadersMiddleware())
-        .addMiddleware(cookieParser())
-        .addMiddleware(_createSessionCookiesMiddleware());
+        .addMiddleware(createMiddleware(requestHandler: router.handler));;
 
+    router.get('/api/v1/session', (Request request) {
+      final cookies = CookieParser.fromHeader(request.headers);
+      final sessionId = cookies.get(CommonServer.sessionIdCookieName)?.value ?? Uuid().v4();
+      final setCookie = Cookie(CommonServer.sessionIdCookieName, sessionId)
+        ..maxAge = Duration(days: 365).inSeconds
+        ..path = '/api';
+
+      return Response(HttpStatus.ok,
+        headers: {HttpHeaders.setCookieHeader: '$setCookie'},
+      );
+    });
     router.get('/api/compiled_output/v1/session/<sessionId>/<path|.+>', (Request request, String sessionId, String path) {
       return staticFileServer.getCompiledOutput(sessionId, path);
     });
@@ -197,20 +207,6 @@ Stack Trace: ${stackTrace.toString()}
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
       'Access-Control-Allow-Headers':
           'Origin, X-Requested-With, Content-Type, Accept, x-goog-api-client'
-    });
-  }
-
-  Middleware _createSessionCookiesMiddleware() {
-    return createMiddleware(requestHandler: (req) {
-      final cookies = req.context['cookies'] as CookieParser;
-      final dartServicesCookie = cookies.get(CommonServer.sessionIdCookieName).value ?? Uuid().v4();
-      // This cookies instance is what will be used to populate the `Set-Cookie`
-      // header in the response. So, we want to clear the cookies and add in the
-      // session cookie to be set on the client.
-      cookies
-        ..clear()
-        ..set(CommonServer.sessionIdCookieName, dartServicesCookie);
-      return null;
     });
   }
 }
