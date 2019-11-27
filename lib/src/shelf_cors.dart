@@ -10,23 +10,35 @@ import 'package:shelf/shelf.dart';
 
 /// Middleware which adds [CORS headers](https://developer.mozilla.org/en-US/docs/Web/HTTP/Access_control_CORS)
 /// to shelf responses. Also handles preflight (OPTIONS) requests.
-Middleware createCorsHeadersMiddleware({Map<String, String> corsHeaders}) {
-  // By default allow access from everywhere.
-  corsHeaders ??= <String, String>{'Access-Control-Allow-Origin': '*'};
+Middleware createCorsHeadersMiddleware({Map<String, String> corsHeaders = const {}}) {
+  return (Handler innerHandler) {
+    return (request) {
+      final origin = request.headers['origin'];
 
-  // Handle preflight (OPTIONS) requests by just adding headers and an empty
-  // response.
-  Response handleOptionsRequest(Request request) {
-    if (request.method == 'OPTIONS') {
-      return Response.ok(null, headers: corsHeaders);
-    } else {
-      return null;
-    }
-  }
+      final headers = {
+        ...corsHeaders,
+        // We can't use `*` or we'll get this CORS error:
+        //     The value of the 'Access-Control-Allow-Origin' header in the response must not be the wildcard '*' when the request's credentials mode is 'include'.
+        //     The credentials mode of requests initiated by the XMLHttpRequest is controlled by the withCredentials attribute.
+        'Access-Control-Allow-Origin': origin,
+        'Access-Control-Allow-Credentials': 'true',
+      };
 
-  Response addCorsHeaders(Response response) =>
-      response.change(headers: corsHeaders);
+      return Future.sync(() {
+        // Handle preflight (OPTIONS) requests by just adding headers and an empty
+        // response.
+        if (request.method == 'OPTIONS') {
+          return Response.ok(null, headers: headers);
+        } else {
+          return null;
+        }
+      }).then((response) {
+        if (response != null) return response;
 
-  return createMiddleware(
-      requestHandler: handleOptionsRequest, responseHandler: addCorsHeaders);
+        return Future.sync(() => innerHandler(request)).then((response) {
+          return response.change(headers: headers);
+        });
+      });
+    };
+  };
 }

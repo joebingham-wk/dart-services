@@ -16,6 +16,8 @@ import 'package:rpc/rpc.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart' as shelf;
 import 'package:shelf_router/shelf_router.dart';
+import 'package:shelf_cookie/shelf_cookie.dart';
+import 'package:uuid/uuid.dart';
 
 import 'src/common.dart';
 import 'src/common_server.dart';
@@ -141,8 +143,20 @@ class EndpointsServer {
     pipeline = Pipeline()
         .addMiddleware(logRequests())
         .addMiddleware(_createCustomCorsHeadersMiddleware())
-        .addMiddleware(createMiddleware(requestHandler: router.handler));
+        .addMiddleware(createMiddleware(requestHandler: router.handler));;
 
+    router.get('/api/v1/session', (Request request) {
+      final cookies = CookieParser.fromHeader(request.headers);
+      final sessionId = cookies.get(CommonServer.sessionIdCookieName)?.value ?? Uuid().v4();
+      final setCookie = Cookie(CommonServer.sessionIdCookieName, sessionId)
+        ..maxAge = Duration(days: 365).inSeconds
+        ..httpOnly = true
+        ..path = '/api';
+
+      return Response(HttpStatus.ok,
+        headers: {HttpHeaders.setCookieHeader: setCookie.toString()},
+      );
+    });
     router.get('/api/compiled_output/v1/session/<sessionId>/<path|.+>', (Request request, String sessionId, String path) {
       return staticFileServer.getCompiledOutput(sessionId, path);
     });
@@ -190,7 +204,6 @@ Stack Trace: ${stackTrace.toString()}
 
   Middleware _createCustomCorsHeadersMiddleware() {
     return shelf_cors.createCorsHeadersMiddleware(corsHeaders: <String, String>{
-      'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
       'Access-Control-Allow-Headers':
           'Origin, X-Requested-With, Content-Type, Accept, x-goog-api-client'

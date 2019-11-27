@@ -19,6 +19,7 @@ dependencies:
   path: ^1.6.2
   shelf: ^0.7.0
   shelf_router: ^0.7.1
+  shelf_cookie: ^1.1.1
   rpc: ^0.6.1
   uuid: ^2.0.0
   yaml: ^2.1.15
